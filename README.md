@@ -2,6 +2,7 @@
 
 A project made for UCC students by UCC students which is gunna win us gold ya boi
 
+
 ## Setup
 
 ### IntelliJ
@@ -30,6 +31,8 @@ Go to Control panel/System/Advanced System Settings
   - Append following string at the end of the variable value: ;C:\Program Files\Git\bin
       - The semicolon is important, because individual PATH entries are delimited by it
       - The path to git bin directory might be different on your system
+      
+You can check if git is working by going into your IntelliJ, clicking 'Terminal' at the bottom, typing in 'git --version' and clicking enter. If this doesn't error, all good.
 
 ### Stock Info
 
