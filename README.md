@@ -15,6 +15,10 @@ To get your student license to use IntelliJ ultimate for free, go to https://www
 
 The plan is to use Amazon Relational Database Service (RDS), with our SQL dialect to be PostgreSQL.
 
+Name: smfquant
+User: smfquantuser
+password: smfquant2018
+
 ### Git
 
 Git will be our version control system, download Git at https://git-scm.com/.
@@ -22,6 +26,9 @@ Git will be our version control system, download Git at https://git-scm.com/.
 To set up git in your IntelliJ project. Go to Settings -> Version Control -> Git. When here change your "Path to Git executable" to wherever your git.exe file is (found in 'Git\bin' folder which is likely in 'C:\Program Files'). Then restart your IntelliJ.
       
 You can check if git is working by going into your IntelliJ, clicking 'Terminal' at the bottom, typing in 'git --version' and clicking enter. If this doesn't error, all good.
+
+To get the project on your intelliJ:
+git clone
 
 ### Stock Info
 
