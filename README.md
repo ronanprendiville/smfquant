@@ -56,7 +56,11 @@ To set up git in your IntelliJ project. Go to Settings -> Version Control -> Git
 You can check if git is working by going into your IntelliJ, clicking 'Terminal' at the bottom, typing in 'git --version' and clicking enter. If this doesn't error, all good.
 
 To get the project on your intelliJ:
-git clone
+- Open Git Bash on your computer
+- Use the 'cd' command to get to where you want to store the project
+- Enter git clone https://github.com/ronanprendiville/smfquant.git
+- Go to IntelliJ
+- Click open and find the project smfquant and open it.
 
 ### Stock Info
 
