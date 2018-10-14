@@ -15,6 +15,8 @@ To get your student license to use IntelliJ ultimate for free, go to https://www
 
 The plan is to use Amazon Relational Database Service (RDS), with our SQL dialect to be PostgreSQL.
 
+When you have cloned and opened the project, to get db click database on right of IntelliJ.
+Input credentials and then go SMF Quant DB -> databases -> smfquant -> schemas -> public
 Name: smfquant
 User: smfquantuser
 password: smfquant2018
