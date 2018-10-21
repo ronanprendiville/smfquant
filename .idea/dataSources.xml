@@ -5,7 +5,7 @@
       <driver-ref>postgresql</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.postgresql.Driver</jdbc-driver>
-      <jdbc-url>jdbc:postgresql://smfquant.cjf7dx8aqfhw.us-east-2.rds.amazonaws.com:5432/smfquant</jdbc-url>
+      <jdbc-url>jdbc:postgresql://smfquant.csu0cjmgqb8i.eu-west-1.rds.amazonaws.com:8080/smfquant</jdbc-url>
     </data-source>
   </component>
 </project>
