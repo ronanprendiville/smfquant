@@ -4,6 +4,8 @@ A project created by students of University College Cork for the 2018/19 Student
 
 ## Setup
 
+To have access to edit the project, set up a github account and send me your username. I will then add you as a contributor.
+
 ### IntelliJ
 
 This will be your IDE (Integrated Development Environment) where the coding will happen. Download IntelliJ Ultimate edition from https://www.jetbrains.com/idea/download/#section=windows.
