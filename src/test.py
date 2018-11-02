@@ -16,4 +16,7 @@ data retrieval function"
 - "git push": This pushes your local changes to the remote repository, updating it. Once this is 
 done, others will need to git pull to retrieve your changes.
 
+Note: you may wish to only make an update to 1 file instead of the entire project. To do this
+use git add <filename> as opposed to git add . - the "." implies all files.
+
 """
