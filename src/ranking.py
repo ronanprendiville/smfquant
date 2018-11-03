@@ -11,4 +11,6 @@ data = {}
 for symbol in stocks:
         data[symbol] = pdr.DataReader(symbol, data_source=source, start=start, end=end)['Adj Close']
 
-print(data)
+#print(data)
+#print(data["MSFT"])
+#print(data["MSFT"][0])
