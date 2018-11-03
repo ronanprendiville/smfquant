@@ -1,5 +1,6 @@
 print("Use this file to practice interacting with git")
 print("Test out writing some random python")
+
 """
 When you are ready to update the online version of the project
 (called as the remote repository, as opposed to your local repository which is on your computer)
@@ -20,3 +21,11 @@ Note: you may wish to only make an update to 1 file instead of the entire projec
 use git add <filename> as opposed to git add . - the "." implies all files.
 
 """
+
+
+
+
+
+
+
+
