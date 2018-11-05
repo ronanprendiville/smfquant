@@ -35,3 +35,7 @@ print("Testing")
 
 print("Hello Nathan")
 
+print("Hello")
+
+print("Hi")
+
