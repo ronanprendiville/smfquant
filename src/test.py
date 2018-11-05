@@ -5,6 +5,8 @@ print("Ronan Brendan Prendiville is a fraud.")
 print("Short Tesla")
 print(2+2)
 print('Hello World')
+print('DSFSDFSDFSDFSDFf')
+
 
 """
 When you are ready to update the online version of the project
@@ -30,3 +32,18 @@ use git add <filename> as opposed to git add . - the "." implies all files.
 print("Hey Guys.. what's up!!!")
 print("Hey!")
 print("Testing")
+
+print("Hello Nathan")
+
+print("Hello")
+
+print("Hi")
+
+print("Mathletico > Matrix")
+
+print("Markowitz Team")
+print("git test")
+
+print("HHHHHHHHHHH)
+print("Hello")
+
