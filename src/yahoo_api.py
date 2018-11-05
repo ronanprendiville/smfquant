@@ -26,27 +26,27 @@ def s_and_p_500_tickers():
 
 
 def store_data_csv(tickers, start, end):
+    """Returns a csv file containing adjusted closing prices for a range of tickers.
+    tickers = list of indexes of companies
+    """
 
-    ''' Returns a csv file containing adjusted closing prices for a range of tickers.
-    tickers = list of indexes of companies  '''
-
-    closing_prices =pd.DataFrame()
+    closing_prices = pd.DataFrame()
 
     for i in tickers:
-        closing_prices[i] = get_adj_closing_prices(i,start,end)
+        closing_prices[i] = get_adj_closing_prices(i, start, end)
     closing_prices.to_csv("storedata.csv")
 
 
 def get_price_dataframe(tickers, start, end):
     """Same function as above however it returns a dataframe
     containing adjusted closing prices for a range of tickers """
-    closing_prices =pd.DataFrame()
+    closing_prices = pd.DataFrame()
     for i in tickers:
-        closing_prices[i] = get_adj_closing_prices(i,start,end)
+        closing_prices[i] = get_adj_closing_prices(i, start, end)
     return closing_prices
 
 
 if __name__ == "__main__":
-    #Examples of how to use functions
-    get_price_dataframe(["WELL","AAPL","WFC","WDC","GOOG"],"2017-11-02","2018-11-02")
-    store_data_csv(["WELL","AAPL","WFC","WDC","GOOG"],"2017-11-02","2018-11-02")
+    # Examples of how to use functions
+    get_price_dataframe(["WELL", "AAPL", "WFC", "WDC", "GOOG"], "2017-11-02", "2018-11-02")
+    store_data_csv(["WELL", "AAPL", "WFC", "WDC", "GOOG"], "2017-11-02", "2018-11-02")
