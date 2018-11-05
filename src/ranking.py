@@ -13,4 +13,5 @@ for symbol in stocks:
 
 #print(data)
 #print(data["MSFT"])
-#print(data["MSFT"][0])
+#print(data["MSFT"][0]
+
