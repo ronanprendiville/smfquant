@@ -1,4 +1,3 @@
-
 import pandas_datareader as pdr
 import pandas as pd
 import datetime
@@ -38,10 +37,7 @@ def store_data_csv(tickers, start, end):
     closing_prices.to_csv("storedata.csv")
 
 
-
-
-
-def store_data_df(tickers, start, end):
+def get_price_dataframe(tickers, start, end):
     """Same function as above however it returns a dataframe
     containing adjusted closing prices for a range of tickers """
     closing_prices =pd.DataFrame()
@@ -52,5 +48,5 @@ def store_data_df(tickers, start, end):
 
 if __name__ == "__main__":
     #Examples of how to use functions
-    store_data_df(["WELL","AAPL","WFC","WDC","GOOG"],"2017-11-02","2018-11-02")
+    get_price_dataframe(["WELL","AAPL","WFC","WDC","GOOG"],"2017-11-02","2018-11-02")
     store_data_csv(["WELL","AAPL","WFC","WDC","GOOG"],"2017-11-02","2018-11-02")
