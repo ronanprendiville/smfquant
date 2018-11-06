@@ -13,7 +13,7 @@ def get_mean_and_volatility(prices):
     sumSq = 0
     for stockReturn in stockReturns :
         sumSq += (stockReturn - mean)**2
-    variance = sumSq / len(priceArr)
+    variance = sumSq / len(stockReturns)
     stdDev = m.sqrt(variance)
     return mean, variance, stdDev
 # Note: Variance/stdDev represent volatility of returns over a (business) day (I think)
