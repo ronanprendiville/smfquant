@@ -1,46 +1,33 @@
-from pandas_datareader import DataReader
-from datetime import datetime as date       # Datetime arguments: datetime(yyyy, m/mm, d/dd)
+import yahoo_api as datareader
+import pandas as pd
 import numpy as np
-import math as m
+import datetime
 
 # Calculates the mean, variance and standard deviation of a list of values
 # given by the 'prices' argument.
-def get_mean_and_volatility(prices):
-    priceArr = np.array(prices)
-    stockReturns = (priceArr[1:len(prices)] - priceArr[0:len(prices)-1]) / priceArr[0:len(prices)-1]
 
-    mean = np.mean(stockReturns)
-    sumSq = 0
-    for stockReturn in stockReturns :
-        sumSq += (stockReturn - mean)**2
-    variance = sumSq / len(stockReturns)
-    stdDev = m.sqrt(variance)
-    return mean, variance, stdDev
-# Note: Variance/stdDev represent volatility of returns over a (business) day (I think)
-
+""" Test Stocks
+"""
 stocks = ["MSFT", "AAPL", "AMZN"]
-start = date(2017, 2, 11)
-end = date(2018, 2, 11)
-source = "yahoo"
+start = datetime.datetime(2017, 2, 11)
+end = datetime.datetime(2018, 2, 11)
 
-# Fetch stock data from Yahoo
-data = {}
-for symbol in stocks:
-    data[symbol] = DataReader(symbol, data_source=source, start=start, end=end)['Adj Close']
+# Get closing prices for chosen stocks and calculate % returns
+closing_prices_df = datareader.get_price_dataframe(stocks, start, end) # pd.DataFrame(columns=stocks)
+returns_df = closing_prices_df.pct_change()
 
-# Store mean and volatility of stock returns
-means = {}
-variances = {}
-stdDevs = {}
-for symbol in data:
-    means[symbol], variances[symbol], stdDevs[symbol] = get_mean_and_volatility(data[symbol])
+# Get mean and covariance of stock returns
+mean_historical_returns_df = returns_df.mean()
+covariance_of_returns_df = returns_df.cov()
 
-# Combine inputs into one (dictionary)
-derivedData = {}
-for symbol in data:
-    derivedData[symbol] = {"Mean": means[symbol], "Variance": variances[symbol], "Standard Deviation": stdDevs[symbol]}
+# Just a randomised set of weights for now
+np.random.seed()
+weights = pd.DataFrame(np.random.uniform(low=0, high=1 ,size=(1,3)), columns=stocks)
 
-print(data["MSFT"])
-print(derivedData["MSFT"])
+# Rescale weights so that their sum is one
+weights_divisor = weights.sum(axis=1)[0]
+weights = weights.truediv(weights_divisor)
 
-# Covariance matrix of stock returns
+# Get the return and s.d. of the portfolio with corresponding weights
+portfolio_return = weights.dot(mean_historical_returns_df).values[0]*252
+portfolio_standard_deviation = np.sqrt(weights.dot(covariance_of_returns_df).dot(weights.transpose()).values[0][0]) * np.sqrt(252)
