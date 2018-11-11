@@ -17,13 +17,15 @@ def get_adj_closing_prices(ticker, start=None, end=None, data_source="yahoo"):
     return df["Adj Close"]
 
 
-def s_and_p_500_tickers():
-    """Returns a list of the tickers of every company on the S&P500
+def s_and_p_500_tickers_by_sector():
+    """Returns a dictionary of sectors with the corresponding tickers of all the companies in the S&P500
     """
+    sectors_tickers={} #dictionary
     wikipedia_url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-    df = pd.read_html(wikipedia_url, header=0)[0]
-    return list(df['Symbol'])
-
+    df = pd.read_html(wikipedia_url,header=0)[0]
+    for i in df['GICS Sector'].unique():
+        sectors_tickers[i]=[df['Symbol'][j] for j in df[df['GICS Sector']==i].index]
+    return sectors_tickers
 
 def store_data_csv(tickers, start, end):
     """Returns a csv file containing adjusted closing prices for a range of tickers.
@@ -44,9 +46,10 @@ def get_price_dataframe(tickers, start, end):
     for i in tickers:
         closing_prices[i] = get_adj_closing_prices(i, start, end)
     return closing_prices
-
+print(get_price_dataframe(["WELL", "AAPL", "WFC", "WDC", "GOOG"], "2017-11-02", "2018-11-02"))
+print(store_data_csv(["WELL", "AAPL", "WFC", "WDC", "GOOG"], "2017-11-02", "2018-11-02"))
 
 if __name__ == "__main__":
     # Examples of how to use functions
-    get_price_dataframe(["WELL", "AAPL", "WFC", "WDC", "GOOG"], "2017-11-02", "2018-11-02")
-    store_data_csv(["WELL", "AAPL", "WFC", "WDC", "GOOG"], "2017-11-02", "2018-11-02")
+    print(get_price_dataframe(["WELL", "AAPL", "WFC", "WDC", "GOOG"], "2017-11-02", "2018-11-02"))
+    print(store_data_csv(["WELL", "AAPL", "WFC", "WDC", "GOOG"], "2017-11-02", "2018-11-02"))
