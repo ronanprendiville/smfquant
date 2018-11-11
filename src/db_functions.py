@@ -20,21 +20,64 @@ def test_select(cur, table_name):
     for row in rows:
         print(row)
         
-#connecting to database
+# Connect to Postgres DB
 def connect():
+    conn = None
     try:
         conn = psycopg2.connect(database=database, user=username, host=hostname, port=port, password=password)
-        print("Connected to db")
-        cur = conn.cursor()
-        return cur, conn
+        print("Connected to database")
+        return conn
 
     except Exception as e:
-        print("I am unable to connect to the database:", e)
+        print("Unable to connect to the database:", e)
         return None
 
-cur, conn = connect()
-test_insert(cur, 'test11', 'test12')
-test_select(cur, 'testtable')
-conn.commit()
-cur.close()
-conn.close()
+# Create tables in the DB
+def create_tables():
+    commands = (
+        """
+        CREATE TABLE stocks (
+            ticker VARCHAR (255) PRIMARY KEY,
+            sector VARCHAR (255),
+            p_e FLOAT(4),
+            ranking_score SMALLINT
+            )
+        """,
+        """
+        CREATE TABLE stock_prices (
+            ticker VARCHAR (255) NOT NULL,
+            date DATE NOT NULL DEFAULT CURRENT_DATE,
+            prices FLOAT(4),
+            FOREIGN KEY (ticker)
+            REFERENCES stocks (ticker)
+            ON DELETE CASCADE
+            )
+        """
+    )
+    conn = None
+    try:
+        conn = connect()
+        cur = conn.cursor()
+
+        for command in commands:
+            cur.execute(command)
+
+        # close communication with DB
+        cur.close()
+        # commit changes to DB
+        conn.commit()
+    except Exception as e:
+        print(e)
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+
+
+#create_tables()
+#test_insert(cur, 'test11', 'test12')
+#test_select(cur, 'testtable')
+#conn.commit()
+#cur.close()
+#conn.close()
