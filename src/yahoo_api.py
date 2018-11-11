@@ -46,10 +46,8 @@ def get_price_dataframe(tickers, start, end):
     for i in tickers:
         closing_prices[i] = get_adj_closing_prices(i, start, end)
     return closing_prices
-print(get_price_dataframe(["WELL", "AAPL", "WFC", "WDC", "GOOG"], "2017-11-02", "2018-11-02"))
-print(store_data_csv(["WELL", "AAPL", "WFC", "WDC", "GOOG"], "2017-11-02", "2018-11-02"))
 
 if __name__ == "__main__":
     # Examples of how to use functions
-    print(get_price_dataframe(["WELL", "AAPL", "WFC", "WDC", "GOOG"], "2017-11-02", "2018-11-02"))
-    print(store_data_csv(["WELL", "AAPL", "WFC", "WDC", "GOOG"], "2017-11-02", "2018-11-02"))
+    get_price_dataframe(["WELL", "AAPL", "WFC", "WDC", "GOOG"], "2017-11-02", "2018-11-02")
+    store_data_csv(["WELL", "AAPL", "WFC", "WDC", "GOOG"], "2017-11-02", "2018-11-02")
