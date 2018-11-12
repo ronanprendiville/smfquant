@@ -47,3 +47,26 @@ print("git test")
 print("HHHHHHHHHHH")
 print("Hello")
 
+# Hey Clodagh, use the following code to insert rows into closing_prices table
+import db_functions as db
+
+# this is an example lst that. Your list needs to be of this format to insert into closing_prices
+lst = [
+        ('2017-11-02','63.107017517089844','165.0301971435547','54.87678146362305','86.27063751220703','1025.5799560546875'),
+        ('2017-11-03','63.507720947265625','169.33978271484375','54.750465393066406','84.7224349975586','1032.47998046875')
+      ]
+
+# to insert into closing_prices
+db.insert_closing_prices(lst)
+
+# prints out the rows from closing_prices
+db.select_closing_prices()
+
+# just a helper function if you want to execute any queries
+db.execute("DELETE from closing_prices")
+
+           
+      
+
+
+
