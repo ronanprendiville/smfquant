@@ -3,3 +3,4 @@ pandas
 matplotlib
 mpl_finance
 requests
+bs4
