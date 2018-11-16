@@ -51,7 +51,7 @@ def calculate_optimiser_inputs(tickers, start, end):
     covariances = returns.cov()
     return mean, covariances
 
-if check_for_csv('storedata.csv'): print('storedata.csv\n', pd.read_csv('storedata.csv',sep=',').head())
+# if check_for_csv('storedata.csv'): print('storedata.csv\n', pd.read_csv('storedata.csv',sep=',').head())
 # meanTest, covariancesTest = calculate_optimiser_inputs(stocks, start, end)
 # print("Matrix of Stock Returns\n", meanTest)
 # print("\n\nCovariance of Stock Returns\n", covariancesTest)
@@ -194,7 +194,6 @@ risk_free_rate = 0.0
 # Calculate the mean returns and covariance of returns
 mean_historical_returns, covariance_of_returns = calculate_optimiser_inputs(stocks, start, end)
 
-# Specify the number of portfolios of varying weights we want to generate
 num_of_portfolios = 50000
 num_of_stocks = len(stocks)
 
