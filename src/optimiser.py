@@ -51,6 +51,7 @@ def calculate_optimiser_inputs(tickers, start, end):
     covariances = returns.cov()
     return mean, covariances
 
+if check_for_csv('storedata.csv'): print('storedata.csv\n', pd.read_csv('storedata.csv',sep=',').head())
 # meanTest, covariancesTest = calculate_optimiser_inputs(stocks, start, end)
 # print("Matrix of Stock Returns\n", meanTest)
 # print("\n\nCovariance of Stock Returns\n", covariancesTest)
