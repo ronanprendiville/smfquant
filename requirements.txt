@@ -4,3 +4,4 @@ matplotlib
 mpl_finance
 requests
 bs4
+sqlalchemy

@@ -70,6 +70,13 @@ import numpy as np
 import pandas as pd
 import yahoo_api as yahoo
 import datetime
+from sqlalchemy import create_engine
+
+hostname = "smfquant.csu0cjmgqb8i.eu-west-1.rds.amazonaws.com"
+port = '8080'
+username = 'smfquantuser'
+password = 'smfquant2018'
+database = 'smfquant'
 
 stocks = ["JNJ", "ABBV", "HD", "DIS"]
 start = datetime.datetime(2017, 2, 11)
@@ -77,6 +84,19 @@ end = datetime.datetime(2018, 2, 11)
 
 data = yahoo.get_price_dataframe(stocks, start, end)
 print(data.head())
+
+engine = create_engine('postgresql://'+username+':'+password+'@'+hostname+':'+port+'/'+database)
+# writing to database
+data.to_sql(name='data_table', con=engine, if_exists='replace', index=True)
+# reading from database
+data_again = pd.read_sql('SELECT * from data_table', engine)
+# trim out time component from Date column
+data_again['Date'] = data_again['Date'].dt.date
+
+print(data_again.head())
+
+
+
            
       
 
