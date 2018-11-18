@@ -1,0 +1,15 @@
+{
+  "db": {
+    "hostname": "smfquant.csu0cjmgqb8i.eu-west-1.rds.amazonaws.com,",
+    "port": "8080",
+    "username": "smfquantuser",
+    "password": "c21mcXVhbnQyMDE4",
+    "database": "smfquant"
+  },
+  "reuters": {
+    "url": "",
+    "cookie": ""
+  }
+
+
+}
