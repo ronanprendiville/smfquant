@@ -1,8 +1,10 @@
 import requests
 import pandas as pd
 import yahoo_api as yapi
+import db_engine as db
+import psycopg2
 
-cookie = "AQIC5wM2LY4SfcxbMWq34nHi%2B6WsO1Uyuw3wkcPMdpDPPzs%3D%40AAJTSQACMTAAAlNLABQtMzczMzQxODYwNzc2NjY4NzEwMQACUzEAAjI2%23"
+cookie = "AQIC5wM2LY4SfcwGo4Vryf5aH9MrOdQ6ybGV%2BPn9RPbVJxw%3D%40AAJTSQACMTAAAlNLABQtMzkxMjk0ODA5MTYxNjA1OTY1OQACUzEAAjI2%23"
 headers = {"Cookie": "iPlanetDirectoryPro=" + cookie + ";Path=/"}
 tickers_by_sector = yapi.s_and_p_500_tickers_by_sector()
 
@@ -92,10 +94,36 @@ def get_pe_vals(tickers):
         else:
             pe = tables[7].loc["Curr P/E Excl Extra, LTM:", "LTM"]
 
+        if(pe == '--'):
+            pe = '0'
+
         # Adds the stock and p/e value to a dictionary
-        # TODO: Change dictionary to pandas dataframe
         pe_dict[stock] = pe
     return pe_dict
 
 # Note that the P/E is not calculated on Eikon when the EPS LTM is less than or equal to zero, hence returning '--'
-print(get_pe_vals(tickers_by_sector["Energy"]))
+# print(get_pe_vals(tickers_by_sector["Energy"]))
+
+# Create DB Engine
+pe_engine = db.DbEngine()
+
+blank_canvas = pd.Series(name="PE")
+blank_canvas.index.name="Ticker"
+pe_engine.create_db_dataframe(blank_canvas, "pe_table")
+
+# Create DB Table & Append PE Values
+for industry in tickers_by_sector:
+    series = pd.Series(get_pe_vals(tickers_by_sector[industry]),name="PE")
+    series.index.name="Ticker"
+    pe_engine.append_db_dataframe(series, "pe_table")
+
+# for industry in tickers_by_sector:
+#     print(industry)
+
+# To delete existing table, uncomment next line
+# pe_engine.delete_table("pe_table")
+
+
+
+
+
