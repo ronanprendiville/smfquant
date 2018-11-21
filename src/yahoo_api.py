@@ -1,6 +1,7 @@
 import pandas_datareader as pdr
 import pandas as pd
 import datetime
+from db_engine import DbEngine
 
 
 def get_adj_closing_prices(ticker, start=None, end=None, data_source="yahoo"):
@@ -51,3 +52,15 @@ if __name__ == "__main__":
     # Examples of how to use functions
     get_price_dataframe(["WELL", "AAPL", "WFC", "WDC", "GOOG"], "2017-11-02", "2018-11-02")
     store_data_csv(["WELL", "AAPL", "WFC", "WDC", "GOOG"], "2017-11-02", "2018-11-02")
+
+    db = DbEngine()
+    db.delete_table('closing_prices_s_and_p')
+    sectors_tickers= s_and_p_500_tickers_by_sector()
+    stocks = [stock for sublist in sectors_tickers.values() for stock in sublist]
+    data = get_price_dataframe(stocks, "2017-11-02", "2018-11-02")
+    db.create_db_dataframe(data,'closing_prices_s_and_p')
+    data_again = db.fetch_db_dataframe('closing_prices_s_and_p')
+    print(data_again)
+    db.append_db_dataframe(data, 'closing_prices_s_and_p')
+    data_again1 = db.fetch_db_dataframe('closing_prices_s_and_p')
+    print(data_again1)
