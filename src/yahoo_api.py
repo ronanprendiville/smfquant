@@ -53,6 +53,7 @@ if __name__ == "__main__":
     get_price_dataframe(["WELL", "AAPL", "WFC", "WDC", "GOOG"], "2017-11-02", "2018-11-02")
     store_data_csv(["WELL", "AAPL", "WFC", "WDC", "GOOG"], "2017-11-02", "2018-11-02")
 
+    #created table in db containing price data for the 500 stocks
     db = DbEngine()
     db.delete_table('closing_prices_s_and_p')
     sectors_tickers= s_and_p_500_tickers_by_sector()
