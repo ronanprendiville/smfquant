@@ -4,20 +4,6 @@ import datetime
 from db_engine import DbEngine
 
 
-def get_adj_closing_prices(ticker, start=None, end=None, data_source="yahoo"):
-    """Returns a pandas series of adjusted closing prices for a given ticker
-    Parameters:
-    ticker: The ticker of the company or index to retrieve closing prices from
-    start: Start date as either a "yyyy-mm-dd" string or a datetime object. Defaults to one year before the current date
-    end: end date as either a "yyyy-mm-dd" string or a datetime object. Defaults to most recent closing price if left blank
-    data_source: data source
-    """
-    if start is None:
-        start = datetime.datetime.now() - datetime.timedelta(days=365)
-    df = pdr.DataReader(ticker, data_source=data_source, start=start, end=end)
-    return df["Adj Close"]
-
-
 def s_and_p_500_tickers_by_sector():
     """Returns a dictionary of sectors with the corresponding tickers of all the companies in the S&P500
     """
@@ -27,6 +13,7 @@ def s_and_p_500_tickers_by_sector():
     for i in df['GICS Sector'].unique():
         sectors_tickers[i]=[df['Symbol'][j] for j in df[df['GICS Sector']==i].index]
     return sectors_tickers
+
 
 def store_data_csv(tickers, start, end):
     """Returns a csv file containing adjusted closing prices for a range of tickers.
@@ -40,17 +27,25 @@ def store_data_csv(tickers, start, end):
     closing_prices.to_csv("storedata.csv")
 
 
-def get_price_dataframe(tickers, start, end):
-    """Same function as above however it returns a dataframe
-    containing adjusted closing prices for a range of tickers """
-    closing_prices = pd.DataFrame()
-    for i in tickers:
-        closing_prices[i] = get_adj_closing_prices(i, start, end)
-    return closing_prices
+def get_price_dataframe(ticker_list, start=None, end=None, data_source="yahoo"):
+    """Returns a dataframe of adjusted closing prices for the tickers in ticker_list.
+    
+    Parameters:
+    ticker_list: A list of tickers to retrieve closing prices from. Also accepts a single ticker given as a string.
+    start: Start date as either a "yyyy-mm-dd" string or a datetime object. Defaults to one year before the current date
+    end: end date as either a "yyyy-mm-dd" string or a datetime object. Defaults to most recent closing price if left blank
+    data_source: data source. Defaults to yahoo.
+    """
+    if start is None:
+        start = datetime.datetime.now() - datetime.timedelta(days=365)
+    df = pdr.DataReader(ticker_list, data_source=data_source, start=start, end=end)
+    return df["Adj Close"]
+
 
 if __name__ == "__main__":
     # Examples of how to use functions
-    get_price_dataframe(["WELL", "AAPL", "WFC", "WDC", "GOOG"], "2017-11-02", "2018-11-02")
+    df = get_price_dataframe(["WELL", "AAPL", "WFC", "WDC", "GOOG"], "2017-11-02", "2018-11-02")
+    print(df)
     store_data_csv(["WELL", "AAPL", "WFC", "WDC", "GOOG"], "2017-11-02", "2018-11-02")
 
     #created table in db containing price data for the 500 stocks
