@@ -4,7 +4,7 @@ import yahoo_api as yapi
 import db_engine as db
 import psycopg2
 
-cookie = "AQIC5wM2LY4SfcwGo4Vryf5aH9MrOdQ6ybGV%2BPn9RPbVJxw%3D%40AAJTSQACMTAAAlNLABQtMzkxMjk0ODA5MTYxNjA1OTY1OQACUzEAAjI2%23"
+cookie = "AQIC5wM2LY4Sfczy%2Fe%2BtPxLoatAiBEwBsIVPQqsCskAEtX0%3D%40AAJTSQACMTAAAlNLABMyMjYwNzM2Mzg3MTQxMzgwODMxAAJTMQACMjc%3D%23"
 headers = {"Cookie": "iPlanetDirectoryPro=" + cookie + ";Path=/"}
 tickers_by_sector = yapi.s_and_p_500_tickers_by_sector()
 
@@ -101,27 +101,53 @@ def get_pe_vals(tickers):
         pe_dict[stock] = pe
     return pe_dict
 
-# Note that the P/E is not calculated on Eikon when the EPS LTM is less than or equal to zero, hence returning '--'
-# print(get_pe_vals(tickers_by_sector["Energy"]))
 
-# Create DB Engine
 pe_engine = db.DbEngine()
 
-blank_canvas = pd.Series(name="PE")
-blank_canvas.index.name="Ticker"
-pe_engine.create_db_dataframe(blank_canvas, "pe_table")
 
-# Create DB Table & Append PE Values
-for industry in tickers_by_sector:
-    series = pd.Series(get_pe_vals(tickers_by_sector[industry]),name="PE")
-    series.index.name="Ticker"
-    pe_engine.append_db_dataframe(series, "pe_table")
+def insert_pe_to_db(stock_universe):
+    pe_engine.delete_table("pe_table")
 
-# for industry in tickers_by_sector:
-#     print(industry)
+    fresh_table = pd.DataFrame(columns=["PE"])
+    fresh_table.index.name="Ticker"
+    pe_engine.create_db_dataframe(fresh_table, "pe_table")
 
-# To delete existing table, uncomment next line
-# pe_engine.delete_table("pe_table")
+    for industry in stock_universe:
+        print(industry)
+        sector_pe_data = get_pe_vals(stock_universe[industry])
+        df = pd.DataFrame.from_dict(sector_pe_data, orient="index", columns=["PE"])
+        df.index.name="Ticker"
+        pe_engine.append_db_dataframe(df, "pe_table")
+
+    return True
+
+
+def insert_single_sector_pe_to_db(stock_universe,industry):
+
+    sector_pe_data = get_pe_vals(stock_universe[industry])
+    df = pd.DataFrame.from_dict(sector_pe_data, orient="index", columns=["PE"])
+    df.index.name="Ticker"
+    pe_engine.append_db_dataframe(df, "pe_table")
+
+    return True
+
+# insert_single_sector_pe_to_db(tickers_by_sector,"Industrials")
+# insert_single_sector_pe_to_db(tickers_by_sector,"Health Care")
+# insert_single_sector_pe_to_db(tickers_by_sector,"Information Technology")
+# insert_single_sector_pe_to_db(tickers_by_sector,"Communication Services")
+# insert_single_sector_pe_to_db(tickers_by_sector,"Consumer Discretionary")
+# insert_single_sector_pe_to_db(tickers_by_sector,"Utilities")
+# insert_single_sector_pe_to_db(tickers_by_sector,"Financials")
+# insert_single_sector_pe_to_db(tickers_by_sector,"Materials")
+# insert_single_sector_pe_to_db(tickers_by_sector,"Real Estate")
+# insert_single_sector_pe_to_db(tickers_by_sector,"Consumer Staples")
+# insert_single_sector_pe_to_db(tickers_by_sector,"Energy")
+
+
+# insert_pe_to_db(tickers_by_sector)
+
+
+
 
 
 
