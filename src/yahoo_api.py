@@ -43,6 +43,12 @@ def get_price_dataframe(ticker_list, start=None, end=None, data_source="yahoo"):
 
 
 if __name__ == "__main__":
+    #The statement if __name__ == "__main__" checks if this file was imported or 
+    #run directly. If this file was imported, __name__ == "__main__" evaluates to false.
+
+    #The direct result of this is that importing this module using "import yahoo_api" will 
+    #not cause the test code to run. 
+
     # Examples of how to use functions
     df = get_price_dataframe(["WELL", "AAPL", "WFC", "WDC", "GOOG"], "2017-11-02", "2018-11-02")
     print(df)
