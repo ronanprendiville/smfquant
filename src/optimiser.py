@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import datetime
 import matplotlib.pyplot as plt
+from db_engine import DbEngine
 import glob
 import pprint
 
@@ -15,38 +16,44 @@ import pprint
 risk_preference = [0.25, 0.50, 0.75]
 target_return = [0.25, 0.50, 0.75]
 
-stocks = ["MSFT", "AAPL", "AMZN"]
-start = datetime.datetime(2017, 2, 11)
-end = datetime.datetime(2018, 2, 11)
+# Initialise Database Engine
+db = DbEngine()
+
+ranked_scores = db.fetch_db_dataframe("rankings_table")
+top_30_ranking_scores = ranked_scores.nsmallest(30, "Ranking_Score")
+stocks = []
+for stock in top_30_ranking_scores["Ticker"]:
+    stocks.append(stock)
+
+# def check_for_csv(csv_name):
+#     """Returns a boolean indicating if there is already a csv file
+#     with a name given by the csv_name parameter. Returns True if the csv
+#     exists in the current directory (src), False otherwise"""
+#     extension = 'csv'
+#     result = [i for i in glob.glob('*.{}'.format(extension))]
+#     return result.count(csv_name) > 0
 
 
-def check_for_csv(csv_name):
-    """Returns a boolean indicating if there is already a csv file
-    with a name given by the csv_name parameter. Returns True if the csv
-    exists in the current directory (src), False otherwise"""
-    extension = 'csv'
-    result = [i for i in glob.glob('*.{}'.format(extension))]
-    return result.count(csv_name) > 0
-
-
-def calculate_optimiser_inputs(tickers, start, end):
+def calculate_optimiser_inputs(tickers):
     """Returns two pandas DataFrames: mean (daily) returns for each
      stock in tickers and matrix of covariances between stocks' returns."""
 
-    # Checks if the csv file for stock prices already exists in the local directory
-    # If not, get the local prices directly from Yahoo! Finance
-    if not check_for_csv('storedata.csv'):
-        datareader.store_data_csv(tickers, start, end)
+    prices = db.fetch_db_dataframe("closing_prices_s_and_p")
 
+    prices_of_top_30 = pd.DataFrame(prices["Date"])
+    for stock in tickers:
+        prices_of_top_30 = prices_of_top_30.join(prices[stock])
+    prices_of_top_30["Date"] = pd.to_datetime(prices_of_top_30["Date"])
+    prices_of_top_30.set_index("Date", inplace=True)
     # Stores the csv file into a DataFrame and fixes the date column so that
     # it is a datetime index as opposed to a specific column in the DataFrame
-    closing_prices = pd.read_csv('storedata.csv', sep=',')
-    closing_prices['Date'] = pd.to_datetime(closing_prices['Date'])
-    closing_prices.set_index('Date', inplace=True)
+    # closing_prices = pd.read_csv('storedata.csv', sep=',')
+    # closing_prices['Date'] = pd.to_datetime(closing_prices['Date'])
+    # closing_prices.set_index('Date', inplace=True)
 
     # Gets the mean of (daily) historical returns and the covariance of stock returns, stored in DataFrames.
     # To see the output of this, uncomment the three lines below and run the code
-    returns = closing_prices.pct_change()
+    returns = prices_of_top_30.pct_change()
     mean = returns.mean()
     covariances = returns.cov()
     return mean, covariances
@@ -192,9 +199,9 @@ def plot_portfolios(portfolios, min_vol_port, max_ret_port, risk_spec_port, ret_
 risk_free_rate = 0.0
 
 # Calculate the mean returns and covariance of returns
-mean_historical_returns, covariance_of_returns = calculate_optimiser_inputs(stocks, start, end)
+mean_historical_returns, covariance_of_returns = calculate_optimiser_inputs(stocks)
 
-num_of_portfolios = 50000
+num_of_portfolios = 5000
 num_of_stocks = len(stocks)
 
 portfolios = simulate_portfolios(stocks, num_of_portfolios, num_of_stocks, mean_historical_returns, covariance_of_returns, risk_free_rate)

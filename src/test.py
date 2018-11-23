@@ -100,6 +100,7 @@
 import yahoo_api as yahoo
 import datetime
 from db_engine import DbEngine
+import pandas as pd
 
 db = DbEngine()
 # stocks = ["JNJ", "ABBV", "HD", "DIS"]
@@ -113,8 +114,36 @@ db = DbEngine()
 # db.append_db_dataframe(data, 'test_df1')
 # data_again1 = db.fetch_db_dataframe('test_df1')
 # print(data_again1)
-           
-      
+
+
+# ranked_stocks_df = db.fetch_db_dataframe("rankings_table")
+# # print(ranked_stocks_df)
+# print(ranked_stocks_df.nsmallest(30, "Ranking_Score"))
+
+ranked_scores = db.fetch_db_dataframe("rankings_table")
+sectors = db.fetch_db_dataframe("sector_table")
+prices = db.fetch_db_dataframe("closing_prices_s_and_p")
+
+top30 = ranked_scores.nsmallest(30, "Ranking_Score")
+
+top30prices = pd.DataFrame(prices["Date"])
+# for stock in top30["Ticker"]:
+#     top30temp = prices[stock]
+#     # print(top30temp)
+#     top30prices.join(top30temp)
+#     print(top30prices.join(top30temp))
+# print(len(top30.index))
+
+ranked_scores = db.fetch_db_dataframe("rankings_table")
+top_30_ranking_scores = ranked_scores.nsmallest(30, "Ranking_Score")
+stocks = []
+for stock in top_30_ranking_scores["Ticker"]:
+    stocks.append(stock)
+print(stocks)
+
+
+
+
 
 
 

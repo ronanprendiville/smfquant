@@ -72,13 +72,9 @@ def rank_values(dictionary, by="High to Low"):
 def insert_rankings_to_db(scores):
     db.delete_table("rankings_table")
 
-    fresh_table = pd.DataFrame(columns=["Ranking_Score"])
-    fresh_table.index.name = "Ticker"
-    db.create_db_dataframe(fresh_table, "rankings_table")
-
     df = pd.DataFrame.from_dict(scores, orient="index", columns=["Ranking_Score"])
     df.index.name = "Ticker"
-    db.append_db_dataframe(df, "rankings_table")
+    db.create_db_dataframe(df, "rankings_table")
 
     return True
 
