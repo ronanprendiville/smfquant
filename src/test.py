@@ -102,19 +102,17 @@ import datetime
 from db_engine import DbEngine
 
 db = DbEngine()
-stocks = ["JNJ", "ABBV", "HD", "DIS"]
-start = datetime.datetime(2017, 2, 11)
-end = datetime.datetime(2018, 2, 11)
-data = yahoo.get_price_dataframe(stocks, start, end)
-db.create_db_dataframe(data,'test_df1')
-data_again = db.fetch_db_dataframe('test_df1')
-print(data_again)
+# stocks = ["JNJ", "ABBV", "HD", "DIS"]
+# start = datetime.datetime(2017, 2, 11)
+# end = datetime.datetime(2018, 2, 11)
+# data = yahoo.get_price_dataframe(stocks, start, end)
+# db.create_db_dataframe(data,'test_df1')
+# data_again = db.fetch_db_dataframe('closing_prices_s_and_p')
+# print(data_again)
 
-db.append_db_dataframe(data, 'test_df1')
-data_again1 = db.fetch_db_dataframe('test_df1')
-print(data_again1)
-
-db.delete_table('test_df')
+# db.append_db_dataframe(data, 'test_df1')
+# data_again1 = db.fetch_db_dataframe('test_df1')
+# print(data_again1)
            
       
 

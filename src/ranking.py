@@ -1,14 +1,14 @@
-import yahoo_api as datareader
-import datetime
 from db_engine import DbEngine
-
-tickers = ["MSFT", "AAPL", "AMZN"]
-start = datetime.datetime(2017, 11, 10)
-end = datetime.datetime(2018, 11, 10)
-data = datareader.get_price_dataframe(tickers, start, end)
+import pandas as pd
 
 db = DbEngine()
 pe_df = db.fetch_db_dataframe("pe_table")
+prices_df = db.fetch_db_dataframe("closing_prices_s_and_p")
+
+# Get tickers which are the column names from the prices dataframe
+# and convert from a numpy array to a list using .tolist()
+tickers = prices_df.columns.values.tolist()
+tickers.pop(0)
 
 
 def get_percentage_change_dictionary(dataframe, stocks):
@@ -26,8 +26,14 @@ def get_percentage_change_dictionary(dataframe, stocks):
 
 def get_pe_dictionary(pe_values, stocks):
     pe_dict = {}
+    exclusion_list = []
     for stock in stocks:
-        pe_dict[stock] = pe_values[(pe_values.Ticker == stock)].iloc[0]["PE"]
+        pe_val = pe_values[(pe_values.Ticker == stock)].iloc[0]["PE"]
+        if pe_val == "0":
+            exclusion_list.append(stock)
+        else:
+            pe_dict[stock] = pe_val
+
     return pe_dict
 
 
@@ -63,19 +69,32 @@ def rank_values(dictionary, by="High to Low"):
     return rank_dict
 
 
+def insert_rankings_to_db(scores):
+    db.delete_table("rankings_table")
+
+    fresh_table = pd.DataFrame(columns=["Ranking_Score"])
+    fresh_table.index.name = "Ticker"
+    db.create_db_dataframe(fresh_table, "rankings_table")
+
+    df = pd.DataFrame.from_dict(scores, orient="index", columns=["Ranking_Score"])
+    df.index.name = "Ticker"
+    db.append_db_dataframe(df, "rankings_table")
+
+    return True
+
+
+# Get & rank PE dictionary
 pe_dictionary = get_pe_dictionary(pe_df, tickers)
-print(pe_dictionary)
-
 ranked_by_pe = rank_values(pe_dictionary, by="Low to High")
-print(ranked_by_pe)
 
-prices_dictionary = get_percentage_change_dictionary(data,tickers)
-print(prices_dictionary)
+# Get & rank Price Change dictionary
+prices_dictionary = get_percentage_change_dictionary(prices_df, tickers)
 ranked_by_price_change = rank_values(prices_dictionary)
-print(ranked_by_price_change)
 
-rankings = {key: ranked_by_pe[key] + ranked_by_price_change[key]
-            for key in ranked_by_pe}
+# Add rankings to get ranking scores
+# Note the 'for key in ranked_by_pe', so tickers with invalid PE vals are excluded
+ranking_scores = {key: ranked_by_pe[key] + ranked_by_price_change[key]
+                  for key in ranked_by_pe}
 
-print(rankings)
-
+# Insert ranking scores to database
+insert_rankings_to_db(ranking_scores)
