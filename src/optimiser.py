@@ -95,8 +95,8 @@ def simulate_portfolios(tickers, num_of_portfolios, num_of_stocks, returns, cova
         # and the Sharpe Ratio, which is the risk-adjusted return (return for each unit of risk)
         # For a graphical picture, have a look at the following article (pg. 4,5)
         # https://faculty.washington.edu/ezivot/econ424/portfolioTheoryMatrix.pdf
-        mean_return = np.dot(simulated_weights, returns)
-        volatility = np.sqrt(np.dot(simulated_weights.T, np.dot(covariances, simulated_weights)))
+        mean_return = np.dot(simulated_weights, returns)*252
+        volatility = np.sqrt(np.dot(simulated_weights.T, np.dot(covariances, simulated_weights)))*np.sqrt(252)
         sharpe_ratio = (mean_return - risk_free_rate) / volatility
 
         # Print code for those who want to see what the values look like:
@@ -201,46 +201,64 @@ risk_free_rate = 0.0
 # Calculate the mean returns and covariance of returns
 mean_historical_returns, covariance_of_returns = calculate_optimiser_inputs(stocks)
 
-num_of_portfolios = 5000
+num_of_simulations = 30
+sharpe_simulation = []
+num_of_portfolios = 500000
 num_of_stocks = len(stocks)
 
-portfolios = simulate_portfolios(stocks, num_of_portfolios, num_of_stocks, mean_historical_returns, covariance_of_returns, risk_free_rate)
 
-"""Portfolios of interest (minimum volatility and maximum sharpe ratio)
-"""
-min_volatility = portfolios['Volatility'].min()
-min_volatility_portfolio = portfolios.loc[portfolios['Volatility'] == min_volatility]
 
-max_sharpe_ratio = portfolios['Sharpe Ratio'].max()
-max_sharpe_ratio_portfolio = portfolios.loc[portfolios['Sharpe Ratio'] == max_sharpe_ratio]
+for i in range(0,num_of_simulations):
+    """Portfolios of interest (minimum volatility and maximum sharpe ratio)
+    """
+    # min_volatility = portfolios['Volatility'].min()
+    # min_volatility_portfolio = portfolios.loc[portfolios['Volatility'] == min_volatility]
+    portfolios = simulate_portfolios(stocks, num_of_portfolios, num_of_stocks, mean_historical_returns, covariance_of_returns, risk_free_rate)
+    max_sharpe_ratio = portfolios['Sharpe Ratio'].max()
+    max_sharpe_ratio_portfolio = portfolios.loc[portfolios['Sharpe Ratio'] == max_sharpe_ratio]
+    sharpe_simulation.append(max_sharpe_ratio_portfolio)
+
+# print(sharpe_simulation)
+# sharpe_simulation_df = pd.DataFrame(columns=max_sharpe_ratio_portfolio.columns)
+max_sharpes = []
+for i in range(0,num_of_simulations):
+    max_sharpes.append(sharpe_simulation[i].iloc[0]['Sharpe Ratio'])
+max_sharpe_index = max_sharpes.index(max(max_sharpes))
+# print(sharpe_simulation[max_sharpe_index])
+
+column_names = sharpe_simulation[max_sharpe_index].columns
+for i in column_names:
+    print(i, '-', 95000 * sharpe_simulation[max_sharpe_index].iloc[0][i])
+
 
 """ User-specified portfolios
 """
-portfolio_ranges = get_portfolio_ranges(portfolios)
-range_tolerance = 1 / np.sqrt(num_of_portfolios)
-risk_specified_portfolios = pd.DataFrame()
-return_specified_portfolios = pd.DataFrame()
+# portfolio_ranges = get_portfolio_ranges(portfolios)
+# range_tolerance = 1 / np.sqrt(num_of_portfolios)
+# risk_specified_portfolios = pd.DataFrame()
+# return_specified_portfolios = pd.DataFrame()
 
-# Gets the actual risk value/s corresponding to each value given in the risk_preference array,
-# gets all the portfolios that are within a certain range of the risk value/s, and picks
-# the portfolio with the greatest return for that given level of risk
-for value in risk_preference:
-    risk_value = portfolio_ranges['Volatility']['min'] + value*(portfolio_ranges['Volatility']['max'] - portfolio_ranges['Volatility']['min'])
-    risk_range_tolerance = range_tolerance*portfolio_ranges['Volatility']['range']
-    portfolios_in_range = portfolios.loc[abs(portfolios['Volatility']-risk_value) <= risk_range_tolerance]
-    max_return_portfolio = portfolios_in_range.loc[portfolios_in_range['Return'] == portfolios_in_range['Return'].max()]
-    max_return_portfolio.insert(0, "Choice of Risk", risk_value)
-    risk_specified_portfolios = risk_specified_portfolios.append(max_return_portfolio, ignore_index=True)
+# # Gets the actual risk value/s corresponding to each value given in the risk_preference array,
+# # gets all the portfolios that are within a certain range of the risk value/s, and picks
+# # the portfolio with the greatest return for that given level of risk
+# for value in risk_preference:
+#     risk_value = portfolio_ranges['Volatility']['min'] + value*(portfolio_ranges['Volatility']['max'] - portfolio_ranges['Volatility']['min'])
+#     risk_range_tolerance = range_tolerance*portfolio_ranges['Volatility']['range']
+#     portfolios_in_range = portfolios.loc[abs(portfolios['Volatility']-risk_value) <= risk_range_tolerance]
+#     max_return_portfolio = portfolios_in_range.loc[portfolios_in_range['Return'] == portfolios_in_range['Return'].max()]
+#     max_return_portfolio.insert(0, "Choice of Risk", risk_value)
+#     risk_specified_portfolios = risk_specified_portfolios.append(max_return_portfolio, ignore_index=True)
+#
+# # Gets the actual return value/s corresponding to each value given in the target_return array,
+# # gets all the portfolios that are within a certain range of the return value/s, and picks
+# # the portfolio with the lowest risk for that given level of return
+# for value in target_return:
+#     return_value = portfolio_ranges['Return']['min'] + value*(portfolio_ranges['Return']['max'] - portfolio_ranges['Return']['min'])
+#     return_range_tolerance = range_tolerance*portfolio_ranges['Return']['range']
+#     portfolios_in_range = portfolios.loc[abs(portfolios['Return']-return_value) <= return_range_tolerance]
+#     min_risk_portfolio = portfolios_in_range.loc[portfolios_in_range['Volatility'] == portfolios_in_range['Volatility'].min()]
+#     min_risk_portfolio.insert(0, "Choice of Return", return_value)
+#     return_specified_portfolios = return_specified_portfolios.append(min_risk_portfolio, ignore_index=True)
 
-# Gets the actual return value/s corresponding to each value given in the target_return array,
-# gets all the portfolios that are within a certain range of the return value/s, and picks
-# the portfolio with the lowest risk for that given level of return
-for value in target_return:
-    return_value = portfolio_ranges['Return']['min'] + value*(portfolio_ranges['Return']['max'] - portfolio_ranges['Return']['min'])
-    return_range_tolerance = range_tolerance*portfolio_ranges['Return']['range']
-    portfolios_in_range = portfolios.loc[abs(portfolios['Return']-return_value) <= return_range_tolerance]
-    min_risk_portfolio = portfolios_in_range.loc[portfolios_in_range['Volatility'] == portfolios_in_range['Volatility'].min()]
-    min_risk_portfolio.insert(0, "Choice of Return", return_value)
-    return_specified_portfolios = return_specified_portfolios.append(min_risk_portfolio, ignore_index=True)
+# plot_portfolios(portfolios, min_volatility_portfolio, max_sharpe_ratio_portfolio, risk_specified_portfolios, return_specified_portfolios)
 
-plot_portfolios(portfolios, min_volatility_portfolio, max_sharpe_ratio_portfolio, risk_specified_portfolios, return_specified_portfolios)
