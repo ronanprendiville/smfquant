@@ -23,7 +23,7 @@ def store_data_csv(tickers, start, end):
     closing_prices = pd.DataFrame()
 
     for i in tickers:
-        closing_prices[i] = get_adj_closing_prices(i, start, end)
+        closing_prices[i] = get_price_dataframe(i, start, end)
     closing_prices.to_csv("storedata.csv")
 
 
