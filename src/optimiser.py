@@ -1,38 +1,15 @@
-import yahoo_api as datareader
 import pandas as pd
+import pandas_datareader as pdr
 import numpy as np
-import datetime
 import matplotlib.pyplot as plt
 from db_engine import DbEngine
-import glob
-import pprint
 
-# These input arrays will be used to find portfolios with a specific
-# risk/return level. Each element (which has to be between 0 and 1)
-# represents a point along our range of possible values, e.g.
-# if the range of portfolio returns in our simulation
-# is [0,10], the target return will give portfolios with return values
-# of approximately [2.5, 5.0, 7.5] with the least risk. Same with risk_preference
-risk_preference = [0.25, 0.50, 0.75]
-target_return = [0.25, 0.50, 0.75]
-
-# Initialise Database Engine
-db = DbEngine()
-
-ranked_scores = db.fetch_db_dataframe("rankings_table")
-top_30_ranking_scores = ranked_scores.nsmallest(30, "Ranking_Score")
-stocks = []
-for stock in top_30_ranking_scores["Ticker"]:
-    stocks.append(stock)
-
-# def check_for_csv(csv_name):
-#     """Returns a boolean indicating if there is already a csv file
-#     with a name given by the csv_name parameter. Returns True if the csv
-#     exists in the current directory (src), False otherwise"""
-#     extension = 'csv'
-#     result = [i for i in glob.glob('*.{}'.format(extension))]
-#     return result.count(csv_name) > 0
-
+# User-Defined Inputs
+new_portfolio_name = "optimised_portfolio_2"
+new_portfolio_allocation = 95000
+risk_free_rate = 0.0
+num_of_simulations = 3
+num_of_portfolios = 50
 
 def calculate_optimiser_inputs(tickers):
     """Returns two pandas DataFrames: mean (daily) returns for each
@@ -58,14 +35,9 @@ def calculate_optimiser_inputs(tickers):
     covariances = returns.cov()
     return mean, covariances
 
-# if check_for_csv('storedata.csv'): print('storedata.csv\n', pd.read_csv('storedata.csv',sep=',').head())
-# meanTest, covariancesTest = calculate_optimiser_inputs(stocks, start, end)
-# print("Matrix of Stock Returns\n", meanTest)
-# print("\n\nCovariance of Stock Returns\n", covariancesTest)
-
 
 def simulate_portfolios(tickers, num_of_portfolios, num_of_stocks, returns, covariances, risk_free_rate):
-    """Returns a DataFrame with the following columns: 'Return', 'Volatility', 'Sharpe Ratio', '<stock> Weight',
+    """Returns a DataFrame with the following columns: 'Return', 'Volatility', 'Sharpe Ratio', '<stock>',
     with each row index representing a specific portfolio with a different set of generated weights.
     Parameters:
         num_of_portfolios: The number of portfolios we wish to generate
@@ -121,8 +93,8 @@ def simulate_portfolios(tickers, num_of_portfolios, num_of_stocks, returns, cova
         'Sharpe Ratio': portfolio_sharpe_ratio
     }
     for counter,stock in enumerate(tickers):
-        portfolios[stock+' Weight'] = [weight[counter] for weight in portfolio_weights]
-    column_order = ['Return', 'Volatility', 'Sharpe Ratio'] + [stock+' Weight' for stock in tickers]
+        portfolios[stock] = [weight[counter] for weight in portfolio_weights]
+    column_order = ['Return', 'Volatility', 'Sharpe Ratio'] + [stock for stock in tickers]
     # print("\ncolumn order:",column_order)
 
     # The dictionary is then passed into a DataFrame object to make it look nice.
@@ -131,38 +103,72 @@ def simulate_portfolios(tickers, num_of_portfolios, num_of_stocks, returns, cova
     # print("\n",simulated_portfolios.head())
     return simulated_portfolios
 
-def get_portfolio_ranges(portfolios):
-    """Returns a dictionary containing the range of mean returns and
-    volatility of returns in the set of simulations. This is primarily
-    used for getting the portfolios with a risk and return preference
-    as explained at the beginning of this script."""
 
-    range_dict = {
-        'Return': {
-            'min': portfolios['Return'].min(),
-            'max': portfolios['Return'].max()
-        },
-        'Volatility': {
-            'min': portfolios['Volatility'].min(),
-            'max': portfolios['Volatility'].max()
-        }
+def create_optimiser_table(max_sharpe_portfolios, max_sharpe_index, portfolio_allocation):
+    eurusd = pdr.DataReader('DEXUSEU', 'fred').iloc[-1][0]
+    optimiser_dict = max_sharpe_portfolios[max_sharpe_index].iloc[0][3:].mul(portfolio_allocation).to_dict()
+    optimiser_stocks = list(optimiser_dict.keys())
+    optimiser_amounts = list(optimiser_dict.values())
+
+    optimiser_stocks_dict = {}
+    optimiser_amounts_dict = {}
+    for count, value in enumerate(optimiser_stocks): optimiser_stocks_dict[count] = value
+    for count, value in enumerate(optimiser_amounts): optimiser_amounts_dict[count] = value
+
+    optimiser_dict = {
+        'Stock': optimiser_stocks_dict,
+        'Amount': optimiser_amounts_dict,
+        'Number of Shares': {},
+        'Rounded Off': {},
+        'Rounded Down': {},
+        'Rounded Up': {},
+        'Amount Rounded Off': {},
+        'Amount Rounded Down': {},
+        'Amount Rounded Up': {},
+        'Share Price': {}
     }
-    for key in range_dict:
-        range_dict[key]['range'] = range_dict[key]['max'] - range_dict[key]['min']
-    # print("Dictionary of Ranges")
-    # pprint.pprint(range_dict)
-    return range_dict
+
+    for index, val in enumerate(optimiser_dict['Amount']):
+        stock_name = optimiser_dict['Stock'][index]
+        amount = optimiser_dict['Amount'][index]/eurusd
+        last_price = pdr.DataReader(stock_name, data_source='yahoo', start=2018-11-26, end=2018-11-26).iloc[-1][stock_name]/eurusd
+        num_of_shares = amount / last_price
+        rounded_off = np.round(num_of_shares)
+        rounded_up = np.ceil(num_of_shares)
+        rounded_down = np.floor(num_of_shares)
+        optimiser_dict['Number of Shares'][index] = num_of_shares
+        optimiser_dict['Rounded Off'][index] = rounded_off
+        optimiser_dict['Rounded Up'][index] = rounded_up
+        optimiser_dict['Rounded Down'][index] = rounded_down
+        optimiser_dict['Share Price'][index] = last_price
+        optimiser_dict['Amount Rounded Off'][index] = last_price * rounded_off
+        optimiser_dict['Amount Rounded Up'][index] = last_price * rounded_up
+        optimiser_dict['Amount Rounded Down'][index] = last_price * rounded_down
+
+    total = {
+        'Stock': 'TOTALS',
+        'Amount': sum(optimiser_dict.get('Amount').values()),
+        'Share Price': 0,
+        'Number of Shares': sum(optimiser_dict.get('Number of Shares').values()),
+        'Rounded Off': sum(optimiser_dict.get('Rounded Off').values()),
+        'Amount Rounded Off': sum(optimiser_dict.get('Amount Rounded Off').values()),
+        'Rounded Up': sum(optimiser_dict.get('Rounded Up').values()),
+        'Amount Rounded Up': sum(optimiser_dict.get('Amount Rounded Up').values()),
+        'Rounded Down': sum(optimiser_dict.get('Rounded Down').values()),
+        'Amount Rounded Down': sum(optimiser_dict.get('Amount Rounded Down').values())
+    }
+    column_order = ['Stock', 'Amount', 'Share Price', 'Number of Shares', 'Rounded Off',
+                    'Amount Rounded Off', 'Rounded Up', 'Amount Rounded Up', 'Rounded Down', 'Amount Rounded Down']
+
+    final_optimiser_df = pd.DataFrame(optimiser_dict, columns=column_order).append(total, ignore_index=True).set_index('Stock')
+
+    return final_optimiser_df
 
 
-def plot_portfolios(portfolios, min_vol_port, max_ret_port, risk_spec_port, ret_spec_port):
+def plot_portfolios(portfolios, max_ret_port):
     """This function will plot the simulated portfolios with risk (standard deviation)
     on the x-axis and return on the y-axis.
-    The plot includes the portfolios of minimum volatility and maximum Sharpe ratio.
-    I have also included portfolios which were specified for a given level of risk or level of return.
-    The lines represent the actual level, and the points represent the most optimal portfolio
-    for that specified level of return/risk:
-        '+' for return-specified portfolio
-        'v' (upside-down triangle) for risk-specified portfolio)"""
+    The plot includes the portfolios of minimum volatility and maximum Sharpe ratio."""
 
     plt.style.use('seaborn-dark')
     plt.autoscale(tight=True)
@@ -177,88 +183,51 @@ def plot_portfolios(portfolios, min_vol_port, max_ret_port, risk_spec_port, ret_
     colorbar.set_label('Sharpe Ratio')
 
     # Plots the points/portfolios of minimum volatility and maximum sharpe ratio
-    min_volatility_plot = plt.scatter(min_vol_port['Volatility'], min_vol_port['Return'], c='red', s=100, marker='*')
     max_risk_adjusted_return_plot = plt.scatter(max_ret_port['Volatility'], max_ret_port['Return'], c='blue', s=100, marker='*')
 
-    # Plots the points/portfolios for specified levels of return and risk
-    risk_specified_plot = plt.scatter(risk_specified_portfolios['Volatility'],risk_specified_portfolios['Return'], c='purple', s=50, marker='v')
-    return_specified_plot = plt.scatter(return_specified_portfolios['Volatility'],return_specified_portfolios['Return'], c='black', s=50, marker='+')
-    for risk_val in risk_specified_portfolios['Choice of Risk']:
-        plt.axvline(risk_val, linestyle='--', linewidth=0.4, color='purple')
-    for return_val in return_specified_portfolios['Choice of Return']:
-        plt.axhline(return_val, linestyle='--', linewidth=0.4, color='black')
-
-    legend_handles = [min_volatility_plot, max_risk_adjusted_return_plot, risk_specified_plot, return_specified_plot]
-    legend_labels = ['Portfolio of Lowest Volatility', 'Portfolio of Largest Risk-Adjusted Return', 'Risk-Specified Portfolio', 'Return-Specified Portfolio']
-    plt.legend(handles=legend_handles, labels=legend_labels)
+    legend_handle = [max_risk_adjusted_return_plot]
+    legend_label = ['Portfolio of Largest Risk-Adjusted Return']
+    plt.legend(handles=legend_handle, labels=legend_label)
     plt.show()
 
 
 """This is where I begin the implementation of the optimiser.
 """
-risk_free_rate = 0.0
+
+# Initialise Database Engine
+db = DbEngine()
+
+# Get list of top-ranked stocks and store it in an array
+ranked_scores = db.fetch_db_dataframe("rankings_table")
+top_ranking_scores = ranked_scores.nsmallest(30, "Ranking_Score")
+stocks = [stock for stock in top_ranking_scores["Ticker"]]
 
 # Calculate the mean returns and covariance of returns
 mean_historical_returns, covariance_of_returns = calculate_optimiser_inputs(stocks)
 
-num_of_simulations = 30
-sharpe_simulation = []
-num_of_portfolios = 500000
+# Run simulations and store the max-sharpe-ratio portfolio at the end of each one
+max_sharpe_simulation = []
 num_of_stocks = len(stocks)
-
-
-
-for i in range(0,num_of_simulations):
-    """Portfolios of interest (minimum volatility and maximum sharpe ratio)
-    """
-    # min_volatility = portfolios['Volatility'].min()
-    # min_volatility_portfolio = portfolios.loc[portfolios['Volatility'] == min_volatility]
+for i in range(0, num_of_simulations):
     portfolios = simulate_portfolios(stocks, num_of_portfolios, num_of_stocks, mean_historical_returns, covariance_of_returns, risk_free_rate)
     max_sharpe_ratio = portfolios['Sharpe Ratio'].max()
     max_sharpe_ratio_portfolio = portfolios.loc[portfolios['Sharpe Ratio'] == max_sharpe_ratio]
-    sharpe_simulation.append(max_sharpe_ratio_portfolio)
+    max_sharpe_simulation.append(max_sharpe_ratio_portfolio)
 
-# print(sharpe_simulation)
-# sharpe_simulation_df = pd.DataFrame(columns=max_sharpe_ratio_portfolio.columns)
+# Get the portfolio with the greatest sharpe ratio
 max_sharpes = []
-for i in range(0,num_of_simulations):
-    max_sharpes.append(sharpe_simulation[i].iloc[0]['Sharpe Ratio'])
+for i in range(0, num_of_simulations): max_sharpes.append(max_sharpe_simulation[i].iloc[0]['Sharpe Ratio'])
 max_sharpe_index = max_sharpes.index(max(max_sharpes))
-# print(sharpe_simulation[max_sharpe_index])
 
-column_names = sharpe_simulation[max_sharpe_index].columns
-for i in column_names:
-    print(i, '-', 95000 * sharpe_simulation[max_sharpe_index].iloc[0][i])
+# Save a db table with portfolio info (return, volatility and sharpe ratio)
+portfolio_info_df = pd.DataFrame(data=max_sharpe_simulation[max_sharpe_index].iloc[0][0:3])
+portfolio_info_df.columns = ['Value']
+db.delete_table(new_portfolio_name + '_info')
+db.create_db_dataframe(portfolio_info_df, new_portfolio_name + '_info')
 
+# Create the final output table from the optimiser and save to db
+final_optimiser_df = create_optimiser_table(max_sharpe_simulation, max_sharpe_index, new_portfolio_allocation)
+db.delete_table(new_portfolio_name)
+db.create_db_dataframe(final_optimiser_df, new_portfolio_name)
 
-""" User-specified portfolios
-"""
-# portfolio_ranges = get_portfolio_ranges(portfolios)
-# range_tolerance = 1 / np.sqrt(num_of_portfolios)
-# risk_specified_portfolios = pd.DataFrame()
-# return_specified_portfolios = pd.DataFrame()
-
-# # Gets the actual risk value/s corresponding to each value given in the risk_preference array,
-# # gets all the portfolios that are within a certain range of the risk value/s, and picks
-# # the portfolio with the greatest return for that given level of risk
-# for value in risk_preference:
-#     risk_value = portfolio_ranges['Volatility']['min'] + value*(portfolio_ranges['Volatility']['max'] - portfolio_ranges['Volatility']['min'])
-#     risk_range_tolerance = range_tolerance*portfolio_ranges['Volatility']['range']
-#     portfolios_in_range = portfolios.loc[abs(portfolios['Volatility']-risk_value) <= risk_range_tolerance]
-#     max_return_portfolio = portfolios_in_range.loc[portfolios_in_range['Return'] == portfolios_in_range['Return'].max()]
-#     max_return_portfolio.insert(0, "Choice of Risk", risk_value)
-#     risk_specified_portfolios = risk_specified_portfolios.append(max_return_portfolio, ignore_index=True)
-#
-# # Gets the actual return value/s corresponding to each value given in the target_return array,
-# # gets all the portfolios that are within a certain range of the return value/s, and picks
-# # the portfolio with the lowest risk for that given level of return
-# for value in target_return:
-#     return_value = portfolio_ranges['Return']['min'] + value*(portfolio_ranges['Return']['max'] - portfolio_ranges['Return']['min'])
-#     return_range_tolerance = range_tolerance*portfolio_ranges['Return']['range']
-#     portfolios_in_range = portfolios.loc[abs(portfolios['Return']-return_value) <= return_range_tolerance]
-#     min_risk_portfolio = portfolios_in_range.loc[portfolios_in_range['Volatility'] == portfolios_in_range['Volatility'].min()]
-#     min_risk_portfolio.insert(0, "Choice of Return", return_value)
-#     return_specified_portfolios = return_specified_portfolios.append(min_risk_portfolio, ignore_index=True)
-
-# plot_portfolios(portfolios, min_volatility_portfolio, max_sharpe_ratio_portfolio, risk_specified_portfolios, return_specified_portfolios)
-
+# plot_portfolios(portfolios, max_sharpe_ratio_portfolio)
