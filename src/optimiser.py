@@ -43,64 +43,37 @@ def simulate_portfolios(tickers, num_of_portfolios, num_of_stocks, returns, cova
         num_of_portfolios: The number of portfolios we wish to generate
         num_of_stocks: The number of stocks that will be included in the optimiser
         returns: DataFrame of stock returns
-        covariances: DataFrame of covariances of stock returns
-    To see the output for some of these, just uncomment the print lines of interest, then run the code."""
+        covariances: DataFrame of covariances of stock returns"""
+    
+    returns = np.array(returns)
+    covariances = np.array(covariances)
+    
+    random_weights = np.random.random(size=(num_of_portfolios, num_of_stocks))
+    random_weights = random_weights/random_weights.sum(axis=1).reshape(-1,1)
 
-    # Initialises the pseudo-random number generator so that a different set of weights
-    # is generated for each simulation.
-    np.random.seed()
+    # Explanation of theory:
+    # https://faculty.washington.edu/ezivot/econ424/portfolioTheoryMatrix.pdf
 
-    # We initalise our arrays here, outside the for loop. Values are subsequently stored
-    # into these arrays for every iteration in the loop.
-    portfolio_returns = []
-    portfolio_volatility = []
-    portfolio_weights = []
-    portfolio_sharpe_ratio = []
+    # Note: @ is matrix multiplication, * is elementwise multiplication
 
-    for single_portfolio in range(num_of_portfolios):
-        # Generates a random 'vector' of weights and then
-        # scale the weights so that they sum to one (representing 100% of our capital)
-        simulated_weights = np.random.random(num_of_stocks)
-        simulated_weights /= np.sum(simulated_weights)
-
-        # Calculates the portfolio's mean and volatility (standard deviation) of (daily) returns,
-        # and the Sharpe Ratio, which is the risk-adjusted return (return for each unit of risk)
-        # For a graphical picture, have a look at the following article (pg. 4,5)
-        # https://faculty.washington.edu/ezivot/econ424/portfolioTheoryMatrix.pdf
-        mean_return = np.dot(simulated_weights, returns)
-        volatility = np.sqrt(np.dot(simulated_weights.T, np.dot(covariances, simulated_weights)))
-        sharpe_ratio = (mean_return - risk_free_rate) / volatility
-
-        # Print code for those who want to see what the values look like:
-        # if single_portfolio == 0:
-        #     print("simulated weights:", simulated_weights)
-        #     print("\nportfolio mean daily return:", simulated_weights)
-        #     print("\nportfolio volatility:", volatility)
-        #     print("\nsharpe ratio:", sharpe_ratio)
-
-        # Stores our calculated values into the arrays that we initialised before this loop
-        portfolio_returns.append(mean_return)
-        portfolio_volatility.append(volatility)
-        portfolio_weights.append(simulated_weights)
-        portfolio_sharpe_ratio.append(sharpe_ratio)
-
-    # Here, I am cleaning up the data into an easy-to-read form.
-    # I store the data from the portfolios, including the weight apportioned to each stock,
-    # into a dictionary.
-    portfolios = {
-        'Return': portfolio_returns,
-        'Volatility': portfolio_volatility,
-        'Sharpe Ratio': portfolio_sharpe_ratio
-    }
-    for counter,stock in enumerate(tickers):
-        portfolios[stock] = [weight[counter] for weight in portfolio_weights]
-    column_order = ['Return', 'Volatility', 'Sharpe Ratio'] + [stock for stock in tickers]
-    # print("\ncolumn order:",column_order)
-
-    # The dictionary is then passed into a DataFrame object to make it look nice.
-    simulated_portfolios = pd.DataFrame(portfolios, columns=column_order)
-
-    # print("\n",simulated_portfolios.head())
+    # Find the mean return for each simulated portfolio
+    mean_return  = (random_weights @ returns) 
+    # Equivalent to 
+    # mean_return = np.array([weight.dot(returns) for weight in random_weights])
+    
+    # Find the variance of returns for each simulated portfolio
+    variance_return  = (random_weights @ covariances * random_weights).sum(axis=1)
+    # Equivalent to 
+    # np.array([weight.T @ covariances @ weight for weight in random_weights])
+    
+    volatility = np.sqrt(variance_return)
+    sharpe = (mean_return - risk_free_rate)/volatility
+    
+    simulated_portfolios = pd.DataFrame(data=random_weights, columns=tickers)
+    simulated_portfolios.insert(0, column="Return", value=mean_return)
+    simulated_portfolios.insert(1, column="Volatility", value=volatility)
+    simulated_portfolios.insert(2, column="Sharpe Ratio", value=sharpe)
+    
     return simulated_portfolios
 
 
