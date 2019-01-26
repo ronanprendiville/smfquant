@@ -67,8 +67,8 @@ def simulate_portfolios(tickers, num_of_portfolios, num_of_stocks, returns, cova
         # and the Sharpe Ratio, which is the risk-adjusted return (return for each unit of risk)
         # For a graphical picture, have a look at the following article (pg. 4,5)
         # https://faculty.washington.edu/ezivot/econ424/portfolioTheoryMatrix.pdf
-        mean_return = np.dot(simulated_weights, returns)*252
-        volatility = np.sqrt(np.dot(simulated_weights.T, np.dot(covariances, simulated_weights)))*np.sqrt(252)
+        mean_return = np.dot(simulated_weights, returns)
+        volatility = np.sqrt(np.dot(simulated_weights.T, np.dot(covariances, simulated_weights)))
         sharpe_ratio = (mean_return - risk_free_rate) / volatility
 
         # Print code for those who want to see what the values look like:
