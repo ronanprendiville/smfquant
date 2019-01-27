@@ -3,6 +3,8 @@ import pandas_datareader as pdr
 import numpy as np
 import matplotlib.pyplot as plt
 from db_engine import DbEngine
+import requests
+import datetime
 
 # User-Defined Inputs
 new_portfolio_name = "optimised_portfolio_2"
@@ -16,23 +18,12 @@ def calculate_optimiser_inputs(tickers):
      stock in tickers and matrix of covariances between stocks' returns."""
 
     prices = db.fetch_db_dataframe("closing_prices_s_and_p")
+    prices_of_top_30 = prices.loc[:,tickers]
 
-    prices_of_top_30 = pd.DataFrame(prices["Date"])
-    for stock in tickers:
-        prices_of_top_30 = prices_of_top_30.join(prices[stock])
-    prices_of_top_30["Date"] = pd.to_datetime(prices_of_top_30["Date"])
-    prices_of_top_30.set_index("Date", inplace=True)
-    # Stores the csv file into a DataFrame and fixes the date column so that
-    # it is a datetime index as opposed to a specific column in the DataFrame
-    # closing_prices = pd.read_csv('storedata.csv', sep=',')
-    # closing_prices['Date'] = pd.to_datetime(closing_prices['Date'])
-    # closing_prices.set_index('Date', inplace=True)
-
-    # Gets the mean of (daily) historical returns and the covariance of stock returns, stored in DataFrames.
-    # To see the output of this, uncomment the three lines below and run the code
-    returns = prices_of_top_30.pct_change()
-    mean = returns.mean()
-    covariances = returns.cov()
+    # Gets the mean of (daily) historical log returns and the covariance of stock log returns.
+    log_returns = prices_of_top_30.pct_change().applymap(lambda x: np.log(x))
+    mean = log_returns.mean()
+    covariances = log_returns.cov()
     return mean, covariances
 
 
@@ -77,8 +68,40 @@ def simulate_portfolios(tickers, num_of_portfolios, num_of_stocks, returns, cova
     return simulated_portfolios
 
 
+def get_exchange_rate():
+    """Returns most recent daily exchange rate for given currencies with USD.
+    Uses currencylayer API first then tries pandas datareader (source: FRED),
+    which has a less up-to-date rate. Function currently only allows EUR.
+    NOTE: If access_key is expired/invalid, another one can be obtained from https://currencylayer.com/.
+    Just sign up with a free account."""
+    access_key = '850e3fc0a17849d164d52a579e381b61';
+    params = {
+        'access_key': access_key,
+        'currencies': 'EUR',
+        'format': 1
+    }
+    url = 'http://apilayer.net/api/live'
+
+    try:
+        r = requests.get(url,params)
+        live_quote = r.json()
+        fx_rate = live_quote['quotes']['USDEUR']
+        date_of_rate = datetime.date.fromtimestamp(live_quote['timestamp'])
+    except:
+        print('-I- Could not fetch FX rate from currencylayer API. Using FRED API instead.')
+        quote = pdr.DataReader('DEXUSEU', 'fred')
+        today = datetime.datetime.now()
+        fx_rate = quote.asof(today).iloc[0]
+        date_of_rate = quote.loc[quote['DEXUSEU']==fx_rate].iloc[-1].name
+
+    fx_rate = fx_rate if fx_rate>1 else 1/fx_rate
+    print('-I- Using EURUSD rate of', fx_rate, 'as of', date_of_rate)
+
+    return(fx_rate)
+
+
 def create_optimiser_table(max_sharpe_portfolios, max_sharpe_index, portfolio_allocation):
-    eurusd = pdr.DataReader('DEXUSEU', 'fred').iloc[-1][0]
+    eurusd = get_exchange_rate()
     optimiser_dict = max_sharpe_portfolios[max_sharpe_index].iloc[0][3:].mul(portfolio_allocation).to_dict()
     optimiser_stocks = list(optimiser_dict.keys())
     optimiser_amounts = list(optimiser_dict.values())
