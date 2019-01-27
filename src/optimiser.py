@@ -21,22 +21,22 @@ def calculate_optimiser_inputs(tickers):
     prices_of_top_30 = prices.loc[:,tickers]
 
     # Gets the mean of (daily) historical log returns and the covariance of stock log returns.
-    log_returns = prices_of_top_30.pct_change().applymap(lambda x: np.log(x))
+    log_returns = np.log(prices_of_top_30).diff()
     mean = log_returns.mean()
     covariances = log_returns.cov()
     return mean, covariances
 
 
-def simulate_portfolios(tickers, num_of_portfolios, num_of_stocks, returns, covariances, risk_free_rate):
+def simulate_portfolios(tickers, num_of_portfolios, returns, covariances, risk_free_rate):
     """Returns a DataFrame with the following columns: 'Return', 'Volatility', 'Sharpe Ratio', '<stock>',
     with each row index representing a specific portfolio with a different set of generated weights.
     Parameters:
         num_of_portfolios: The number of portfolios we wish to generate
-        num_of_stocks: The number of stocks that will be included in the optimiser
         returns: DataFrame of stock returns
         covariances: DataFrame of covariances of stock returns"""
-    
+
     returns = np.array(returns)
+    num_of_stocks = len(returns)
     covariances = np.array(covariances)
     
     random_weights = np.random.random(size=(num_of_portfolios, num_of_stocks))
@@ -203,9 +203,8 @@ mean_historical_returns, covariance_of_returns = calculate_optimiser_inputs(stoc
 
 # Run simulations and store the max-sharpe-ratio portfolio at the end of each one
 max_sharpe_simulation = []
-num_of_stocks = len(stocks)
 for i in range(0, num_of_simulations):
-    portfolios = simulate_portfolios(stocks, num_of_portfolios, num_of_stocks, mean_historical_returns, covariance_of_returns, risk_free_rate)
+    portfolios = simulate_portfolios(stocks, num_of_portfolios, mean_historical_returns, covariance_of_returns, risk_free_rate)
     max_sharpe_ratio = portfolios['Sharpe Ratio'].max()
     max_sharpe_ratio_portfolio = portfolios.loc[portfolios['Sharpe Ratio'] == max_sharpe_ratio]
     max_sharpe_simulation.append(max_sharpe_ratio_portfolio)
