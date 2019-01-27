@@ -9,7 +9,7 @@ def s_and_p_500_tickers_by_sector():
     """
     sectors_tickers={} #dictionary
     wikipedia_url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-    df = pd.read_html(wikipedia_url,header=0)[0]
+    df = pd.read_html(wikipedia_url,header=0)[1]
     for i in df['GICS Sector'].unique():
         sectors_tickers[i]=[df['Symbol'][j] for j in df[df['GICS Sector']==i].index]
     return sectors_tickers
