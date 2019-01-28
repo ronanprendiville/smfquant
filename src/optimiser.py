@@ -141,7 +141,7 @@ def create_optimiser_table(best_portfolio_weights, portfolio_allocation):
     optimiser_df = pd.DataFrame(optimiser_df)
 
     columns = ['Weight', 'Amount', 'Share Price', 'Number of Shares', 'Rounded Off',
-               'Amount_Rounded_Off', 'Rounded Up', 'Amount Rounded Up', 'Rounded Down', 'Amount Rounded Down']
+               'Amount Rounded Off', 'Rounded Up', 'Amount Rounded Up', 'Rounded Down', 'Amount Rounded Down']
     total = {}
     for column in columns:
         if column == 'Stock':
