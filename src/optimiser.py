@@ -7,11 +7,11 @@ import requests
 import datetime
 
 # User-Defined Inputs
-new_portfolio_name = "Optimised Portfolio #2"
+new_portfolio_name = "test"
 new_portfolio_allocation = 60000
 risk_free_rate = 0.0
-num_of_simulations = 5000
-num_of_portfolios = 5000
+num_of_simulations = 50
+num_of_portfolios = 50
 
 def calculate_optimiser_inputs(tickers):
     """Returns two pandas DataFrames: mean (daily) returns for each
@@ -209,7 +209,7 @@ best_sharpe_ratio = max_sharpe_portfolio_per_simulation['Sharpe Ratio'].max()
 best_portfolio = max_sharpe_portfolio_per_simulation.loc[max_sharpe_portfolio_per_simulation['Sharpe Ratio'] == best_sharpe_ratio].reset_index()
 
 # Save a db table with portfolio info (return, volatility and sharpe ratio)
-best_portfolio_info_df = best_portfolio.iloc[0][1:4].rename(index=str, columns={0:'Amount'})
+best_portfolio_info_df = best_portfolio.iloc[0][1:4].rename('Amount')
 best_portfolio_info_df.at['Annual Log Return'] *= 252
 best_portfolio_info_df.at['Volatility'] *= np.sqrt(252)
 db.delete_table(new_portfolio_name + '_info')
