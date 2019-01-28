@@ -48,12 +48,12 @@ def simulate_portfolios(tickers, num_of_portfolios, returns, covariances, risk_f
     # Note: @ is matrix multiplication, * is elementwise multiplication
 
     # Find the mean return for each simulated portfolio
-    mean_return  = (random_weights @ returns) 
+    mean_return = (random_weights @ returns)
     # Equivalent to 
     # mean_return = np.array([weight.dot(returns) for weight in random_weights])
     
     # Find the variance of returns for each simulated portfolio
-    variance_return  = (random_weights @ covariances * random_weights).sum(axis=1)
+    variance_return = (random_weights @ covariances * random_weights).sum(axis=1)
     # Equivalent to 
     # np.array([weight.T @ covariances @ weight for weight in random_weights])
     
@@ -83,7 +83,7 @@ def get_exchange_rate():
     url = 'http://apilayer.net/api/live'
 
     try:
-        r = requests.get(url,params)
+        r = requests.get(url, params)
         live_quote = r.json()
         fx_rate = live_quote['quotes']['USDEUR']
         date_of_rate = datetime.date.fromtimestamp(live_quote['timestamp'])
@@ -92,9 +92,9 @@ def get_exchange_rate():
         quote = pdr.DataReader('DEXUSEU', 'fred')
         today = datetime.datetime.now()
         fx_rate = quote.asof(today).iloc[0]
-        date_of_rate = quote.loc[quote['DEXUSEU']==fx_rate].iloc[-1].name
+        date_of_rate = quote.loc[quote['DEXUSEU'] == fx_rate].iloc[-1].name
 
-    fx_rate = fx_rate if fx_rate>1 else 1/fx_rate
+    fx_rate = fx_rate if (fx_rate > 1) else 1/fx_rate
     print('-I- Using EURUSD rate of', fx_rate, 'as of', date_of_rate)
 
     return(fx_rate)
@@ -109,7 +109,10 @@ def create_optimiser_table(best_portfolio_weights, portfolio_allocation):
     start = start.__format__('%Y-%m-%d')
     eurusd = get_exchange_rate()
 
-    optimiser_df = pd.DataFrame(best_portfolio_weights).rename(index=str, columns={0:'Amount'}) * portfolio_allocation
+    optimiser_df = pd.DataFrame(best_portfolio_weights).rename(index=str, columns={0:'Weight'})
+
+    amount = optimiser_df.loc[:]['Weight'] * portfolio_allocation
+    optimiser_df.insert(len(optimiser_df.columns), 'Amount', amount)
 
     share_price = pdr.DataReader(list(optimiser_df.index), data_source='yahoo', start=start, end=end)['Adj Close'].iloc[-1]/eurusd
     optimiser_df.insert(len(optimiser_df.columns), 'Share Price', share_price)
@@ -137,8 +140,8 @@ def create_optimiser_table(best_portfolio_weights, portfolio_allocation):
 
     optimiser_df = pd.DataFrame(optimiser_df)
 
-    columns = ['Amount', 'Share Price', 'Number of Shares', 'Rounded Off',
-                   'Amount Rounded Off', 'Rounded Up', 'Amount Rounded Up', 'Rounded Down', 'Amount Rounded Down']
+    columns = ['Weight', 'Amount', 'Share Price', 'Number of Shares', 'Rounded Off',
+               'Amount_Rounded_Off', 'Rounded Up', 'Amount Rounded Up', 'Rounded Down', 'Amount Rounded Down']
     total = {}
     for column in columns:
         if column == 'Stock':
