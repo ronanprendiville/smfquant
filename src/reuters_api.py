@@ -4,7 +4,7 @@ import yahoo_api as yapi
 import db_engine as db
 import psycopg2
 
-cookie = "AQIC5wM2LY4Sfczy%2Fe%2BtPxLoatAiBEwBsIVPQqsCskAEtX0%3D%40AAJTSQACMTAAAlNLABMyMjYwNzM2Mzg3MTQxMzgwODMxAAJTMQACMjc%3D%23"
+cookie = "AQIC5wM2LY4Sfcz5uHfW3PbV4TVW8gtXt7VioH%2BvM6hD%2BXw%3D%40AAJTSQACMTAAAlNLABMxMzg5NDkwMzczMjc0MzM0MDUyAAJTMQACMjY%3D%23"
 headers = {"Cookie": "iPlanetDirectoryPro=" + cookie + ";Path=/"}
 tickers_by_sector = yapi.s_and_p_500_tickers_by_sector()
 
@@ -22,7 +22,7 @@ k = ["ALLE", "ARNC", "FBHS", "NLSN",
       "ABBV", "ANTM", "PRGO",
       "ANET", "JNPR", "KEYS", "ORCL",
       "TWTR",
-      "APTV", "KORS", "NCLH",
+      "APTV", "CPRI", "KORS", "NCLH",
       "EVRG",
       "CBOE", "SCHW", "MSCI", "SPGI",
       "DWDP",
@@ -36,14 +36,14 @@ o = ["AAL", "CHRW", "CTAS", "CPRT", "CSX", "EXPD", "FAST", "INFO", "JBHT", "PCAR
       "CTSH", "FFIV", "FISV", "FLIR", "FTNT", "INTC", "INTU", "IPGP", "JKHY", "KLAC", "LRCX", "MCHP", "MU",
       "MSFT", "NTAP", "NVDA", "PAYX", "PYPL", "QRVO", "QCOM", "STX", "SWKS", "SYMC", "SNPS", "TXN", "VRSN",
       "WDC", "XLNX",
-      "ATVI", "GOOGL", "GOOG", "CHTR", "CMCSA", "DISCA", "DISCK", "DISH", "EA", "FB", "NFLX", "NWSA", "NWS",
+      "ATVI", "GOOGL", "GOOG", "CHTR", "CMCSA", "DISCA", "DISCK", "DISH", "EA", "FB", "MXIM", "NFLX", "NWSA", "NWS",
       "TTWO", "TRIP", "FOXA", "FOX", "VIAB",
-      "AMZN", "BKNG", "DLTR", "EBAY", "EXPE", "GRMN", "GT", "HAS", "LKQ", "MAR", "MAT", "ORLY", "ROST", "SBUX",
+      "AMZN", "BKNG", "DLTR", "EBAY", "EXPE", "GRMN", "GT", "HAS", "LKQ", "MAR", "MAT", "NWL", "ORLY", "ROST", "SBUX",
       "TSCO", "ULTA", "WYNN",
-      "XEL",
+      "LNT", "XEL",
       "BHF", "CINF", "CME", "ETFC", "FITB", "HBAN", "NDAQ", "NTRS", "PBCT", "PFG", "SIVB", "TROW", "WLTW", "ZION",
       "EQIX", "REG", "SBAC",
-      "COST", "KHC", "MDLZ", "MNST", "PEP", "WBA"]
+      "COST", "FANG", "KHC", "MDLZ", "MNST", "PEP", "WBA"]
 
 def get_pe_vals(tickers):
     pe_dict = {}
@@ -89,7 +89,7 @@ def get_pe_vals(tickers):
                 ["BA","FLR", "HON", "AET", "JNJ", "PFE", "VRTX", "SWKS", "IPG", "FOXA",
                  "FOX", "VZ", "DIS", "EXPE", "LEN", "NWL", "AWK", "CMS", "NRG", "BBT",
                  "C", "FITB", "JPM", "MS", "WLTW", "PLD", "KMB", "APA", "CVX", "DVN", "XOM",
-                 "NOV", "WMB"]):
+                 "NOV", "WMB", "FRC"]):
             pe = tables[10].loc["Curr P/E Excl Extra, LTM:", "LTM"]
         else:
             pe = tables[7].loc["Curr P/E Excl Extra, LTM:", "LTM"]
@@ -106,42 +106,42 @@ pe_engine = db.DbEngine()
 
 
 def insert_pe_to_db(stock_universe):
-    pe_engine.delete_table("pe_table")
+    pe_engine.delete_table("pe_table_2")
 
     fresh_table = pd.DataFrame(columns=["PE"])
     fresh_table.index.name="Ticker"
-    pe_engine.create_db_dataframe(fresh_table, "pe_table")
+    pe_engine.create_db_dataframe(fresh_table, "pe_table_2")
 
     for industry in stock_universe:
         print(industry)
         sector_pe_data = get_pe_vals(stock_universe[industry])
         df = pd.DataFrame.from_dict(sector_pe_data, orient="index", columns=["PE"])
         df.index.name="Ticker"
-        pe_engine.append_db_dataframe(df, "pe_table")
+        pe_engine.append_db_dataframe(df, "pe_table_2")
 
     return True
 
 
 def insert_single_sector_pe_to_db(stock_universe,industry):
-
+    print(industry)
     sector_pe_data = get_pe_vals(stock_universe[industry])
     df = pd.DataFrame.from_dict(sector_pe_data, orient="index", columns=["PE"])
     df.index.name="Ticker"
-    pe_engine.append_db_dataframe(df, "pe_table")
+    pe_engine.append_db_dataframe(df, "pe_table_2")
 
     return True
 
-# insert_single_sector_pe_to_db(tickers_by_sector,"Industrials")
+#insert_single_sector_pe_to_db(tickers_by_sector,"Industrials")
 # insert_single_sector_pe_to_db(tickers_by_sector,"Health Care")
-# insert_single_sector_pe_to_db(tickers_by_sector,"Information Technology")
-# insert_single_sector_pe_to_db(tickers_by_sector,"Communication Services")
-# insert_single_sector_pe_to_db(tickers_by_sector,"Consumer Discretionary")
-# insert_single_sector_pe_to_db(tickers_by_sector,"Utilities")
-# insert_single_sector_pe_to_db(tickers_by_sector,"Financials")
-# insert_single_sector_pe_to_db(tickers_by_sector,"Materials")
-# insert_single_sector_pe_to_db(tickers_by_sector,"Real Estate")
-# insert_single_sector_pe_to_db(tickers_by_sector,"Consumer Staples")
-# insert_single_sector_pe_to_db(tickers_by_sector,"Energy")
+#insert_single_sector_pe_to_db(tickers_by_sector,"Information Technology")
+#insert_single_sector_pe_to_db(tickers_by_sector,"Communication Services")
+#insert_single_sector_pe_to_db(tickers_by_sector,"Consumer Discretionary")
+#insert_single_sector_pe_to_db(tickers_by_sector,"Utilities")
+#insert_single_sector_pe_to_db(tickers_by_sector,"Financials")
+#insert_single_sector_pe_to_db(tickers_by_sector,"Materials")
+#insert_single_sector_pe_to_db(tickers_by_sector,"Real Estate")
+#insert_single_sector_pe_to_db(tickers_by_sector,"Consumer Staples")
+insert_single_sector_pe_to_db(tickers_by_sector,"Energy")
 
 
 # insert_pe_to_db(tickers_by_sector)

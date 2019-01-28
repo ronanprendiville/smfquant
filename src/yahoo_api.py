@@ -56,13 +56,13 @@ if __name__ == "__main__":
 
     #created table in db containing price data for the 500 stocks
     db = DbEngine()
-    db.delete_table('closing_prices_s_and_p')
+    db.delete_table('closing_prices_s_and_p_2')
     sectors_tickers= s_and_p_500_tickers_by_sector()
     stocks = [stock for sublist in sectors_tickers.values() for stock in sublist]
-    data = get_price_dataframe(stocks, "2017-11-02", "2018-11-02")
-    db.create_db_dataframe(data,'closing_prices_s_and_p')
-    data_again = db.fetch_db_dataframe('closing_prices_s_and_p')
+    data = get_price_dataframe(stocks, "2018-01-28", "2019-01-28")
+    db.create_db_dataframe(data,'closing_prices_s_and_p_2')
+    data_again = db.fetch_db_dataframe('closing_prices_s_and_p_2')
     print(data_again)
-    db.append_db_dataframe(data, 'closing_prices_s_and_p')
-    data_again1 = db.fetch_db_dataframe('closing_prices_s_and_p')
+    db.append_db_dataframe(data, 'closing_prices_s_and_p_2')
+    data_again1 = db.fetch_db_dataframe('closing_prices_s_and_p_2')
     print(data_again1)

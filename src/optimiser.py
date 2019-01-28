@@ -7,17 +7,17 @@ import requests
 import datetime
 
 # User-Defined Inputs
-new_portfolio_name = "optimiser_test"
-new_portfolio_allocation = 90000
+new_portfolio_name = "Optimised Portfolio #2"
+new_portfolio_allocation = 60000
 risk_free_rate = 0.0
-num_of_simulations = 10
-num_of_portfolios = 50
+num_of_simulations = 5000
+num_of_portfolios = 5000
 
 def calculate_optimiser_inputs(tickers):
     """Returns two pandas DataFrames: mean (daily) returns for each
      stock in tickers and matrix of covariances between stocks' returns."""
 
-    prices = db.fetch_db_dataframe("closing_prices_s_and_p")
+    prices = db.fetch_db_dataframe("closing_prices_s_and_p_2")
     prices_of_top_30 = prices.loc[:,tickers]
 
     # Gets the mean of (daily) historical log returns and the covariance of stock log returns.
@@ -186,7 +186,7 @@ def plot_portfolios(portfolios, max_ret_port):
 db = DbEngine()
 
 # Get list of top-ranked stocks and store it in an array
-ranked_scores = db.fetch_db_dataframe("rankings_table")
+ranked_scores = db.fetch_db_dataframe("rankings_table_2")
 top_ranking_scores = ranked_scores.nsmallest(30, "Ranking_Score")
 stocks = [stock for stock in top_ranking_scores["Ticker"]]
 
