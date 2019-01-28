@@ -7,10 +7,10 @@ import requests
 import datetime
 
 # User-Defined Inputs
-new_portfolio_name = "optimised_portfolio_2"
-new_portfolio_allocation = 95000
+new_portfolio_name = "optimiser_test"
+new_portfolio_allocation = 90000
 risk_free_rate = 0.0
-num_of_simulations = 3
+num_of_simulations = 10
 num_of_portfolios = 50
 
 def calculate_optimiser_inputs(tickers):
@@ -61,7 +61,7 @@ def simulate_portfolios(tickers, num_of_portfolios, returns, covariances, risk_f
     sharpe = (mean_return - risk_free_rate)/volatility
     
     simulated_portfolios = pd.DataFrame(data=random_weights, columns=tickers)
-    simulated_portfolios.insert(0, column="Return", value=mean_return)
+    simulated_portfolios.insert(0, column="Annual Log Return", value=mean_return)
     simulated_portfolios.insert(1, column="Volatility", value=volatility)
     simulated_portfolios.insert(2, column="Sharpe Ratio", value=sharpe)
     
@@ -100,63 +100,55 @@ def get_exchange_rate():
     return(fx_rate)
 
 
-def create_optimiser_table(max_sharpe_portfolios, max_sharpe_index, portfolio_allocation):
+def create_optimiser_table(best_portfolio_weights, portfolio_allocation):
+    """"""
+
+    end = datetime.datetime.today()
+    start = end-datetime.timedelta(days=7);
+    end = end.__format__('%Y-%m-%d')
+    start = start.__format__('%Y-%m-%d')
     eurusd = get_exchange_rate()
-    optimiser_dict = max_sharpe_portfolios[max_sharpe_index].iloc[0][3:].mul(portfolio_allocation).to_dict()
-    optimiser_stocks = list(optimiser_dict.keys())
-    optimiser_amounts = list(optimiser_dict.values())
 
-    optimiser_stocks_dict = {}
-    optimiser_amounts_dict = {}
-    for count, value in enumerate(optimiser_stocks): optimiser_stocks_dict[count] = value
-    for count, value in enumerate(optimiser_amounts): optimiser_amounts_dict[count] = value
+    optimiser_df = pd.DataFrame(best_portfolio_weights).rename(index=str, columns={0:'Amount'}) * portfolio_allocation
 
-    optimiser_dict = {
-        'Stock': optimiser_stocks_dict,
-        'Amount': optimiser_amounts_dict,
-        'Number of Shares': {},
-        'Rounded Off': {},
-        'Rounded Down': {},
-        'Rounded Up': {},
-        'Amount Rounded Off': {},
-        'Amount Rounded Down': {},
-        'Amount Rounded Up': {},
-        'Share Price': {}
-    }
+    share_price = pdr.DataReader(list(optimiser_df.index), data_source='yahoo', start=start, end=end)['Adj Close'].iloc[-1]/eurusd
+    optimiser_df.insert(len(optimiser_df.columns), 'Share Price', share_price)
 
-    for index, val in enumerate(optimiser_dict['Amount']):
-        stock_name = optimiser_dict['Stock'][index]
-        amount = optimiser_dict['Amount'][index]/eurusd
-        last_price = pdr.DataReader(stock_name, data_source='yahoo', start=2018-11-26, end=2018-11-26).iloc[-1][stock_name]/eurusd
-        num_of_shares = amount / last_price
-        rounded_off = np.round(num_of_shares)
-        rounded_up = np.ceil(num_of_shares)
-        rounded_down = np.floor(num_of_shares)
-        optimiser_dict['Number of Shares'][index] = num_of_shares
-        optimiser_dict['Rounded Off'][index] = rounded_off
-        optimiser_dict['Rounded Up'][index] = rounded_up
-        optimiser_dict['Rounded Down'][index] = rounded_down
-        optimiser_dict['Share Price'][index] = last_price
-        optimiser_dict['Amount Rounded Off'][index] = last_price * rounded_off
-        optimiser_dict['Amount Rounded Up'][index] = last_price * rounded_up
-        optimiser_dict['Amount Rounded Down'][index] = last_price * rounded_down
+    number_of_shares = optimiser_df.loc[:]['Amount']/optimiser_df.loc[:]['Share Price']
+    optimiser_df.insert(len(optimiser_df.columns), 'Number of Shares', number_of_shares)
 
-    total = {
-        'Stock': 'TOTALS',
-        'Amount': sum(optimiser_dict.get('Amount').values()),
-        'Share Price': 0,
-        'Number of Shares': sum(optimiser_dict.get('Number of Shares').values()),
-        'Rounded Off': sum(optimiser_dict.get('Rounded Off').values()),
-        'Amount Rounded Off': sum(optimiser_dict.get('Amount Rounded Off').values()),
-        'Rounded Up': sum(optimiser_dict.get('Rounded Up').values()),
-        'Amount Rounded Up': sum(optimiser_dict.get('Amount Rounded Up').values()),
-        'Rounded Down': sum(optimiser_dict.get('Rounded Down').values()),
-        'Amount Rounded Down': sum(optimiser_dict.get('Amount Rounded Down').values())
-    }
-    column_order = ['Stock', 'Amount', 'Share Price', 'Number of Shares', 'Rounded Off',
-                    'Amount Rounded Off', 'Rounded Up', 'Amount Rounded Up', 'Rounded Down', 'Amount Rounded Down']
+    rounded_off = optimiser_df[:]['Number of Shares'].apply(lambda x: np.round(x))
+    optimiser_df.insert(len(optimiser_df.columns), 'Rounded Off', rounded_off)
 
-    final_optimiser_df = pd.DataFrame(optimiser_dict, columns=column_order).append(total, ignore_index=True).set_index('Stock')
+    amount_rounded_off = optimiser_df.loc[:]['Share Price'] * optimiser_df.loc[:]['Rounded Off']
+    optimiser_df.insert(len(optimiser_df.columns), 'Amount Rounded Off', amount_rounded_off)
+
+    rounded_up = optimiser_df[:]['Number of Shares'].apply(lambda x: np.ceil(x))
+    optimiser_df.insert(len(optimiser_df.columns), 'Rounded Up', rounded_up)
+
+    amount_rounded_up = optimiser_df.loc[:]['Share Price'] * optimiser_df.loc[:]['Rounded Up']
+    optimiser_df.insert(len(optimiser_df.columns), 'Amount Rounded Up', amount_rounded_up)
+
+    rounded_down = optimiser_df[:]['Number of Shares'].apply(lambda x: np.floor(x))
+    optimiser_df.insert(len(optimiser_df.columns), 'Rounded Down', rounded_down)
+
+    amount_rounded_down = optimiser_df.loc[:]['Share Price'] * optimiser_df.loc[:]['Rounded Down']
+    optimiser_df.insert(len(optimiser_df.columns), 'Amount Rounded Down', amount_rounded_down)
+
+    optimiser_df = pd.DataFrame(optimiser_df)
+
+    columns = ['Amount', 'Share Price', 'Number of Shares', 'Rounded Off',
+                   'Amount Rounded Off', 'Rounded Up', 'Amount Rounded Up', 'Rounded Down', 'Amount Rounded Down']
+    total = {}
+    for column in columns:
+        if column == 'Stock':
+            total[column] = 'TOTAL'
+        elif column == 'Share Price':
+            total[column] = 'NA'
+        else:
+            total[column] = optimiser_df.loc[:][column].sum()
+    total = pd.Series(total, name='TOTAL')
+    final_optimiser_df = optimiser_df.append(total)
 
     return final_optimiser_df
 
@@ -202,26 +194,27 @@ stocks = [stock for stock in top_ranking_scores["Ticker"]]
 mean_historical_returns, covariance_of_returns = calculate_optimiser_inputs(stocks)
 
 # Run simulations and store the max-sharpe-ratio portfolio at the end of each one
-max_sharpe_simulation = []
+max_sharpe_portfolio_per_simulation = pd.DataFrame(columns=['Annual Log Return', 'Volatility', 'Sharpe Ratio']+stocks)
 for i in range(0, num_of_simulations):
     portfolios = simulate_portfolios(stocks, num_of_portfolios, mean_historical_returns, covariance_of_returns, risk_free_rate)
     max_sharpe_ratio = portfolios['Sharpe Ratio'].max()
     max_sharpe_ratio_portfolio = portfolios.loc[portfolios['Sharpe Ratio'] == max_sharpe_ratio]
-    max_sharpe_simulation.append(max_sharpe_ratio_portfolio)
+    max_sharpe_portfolio_per_simulation = max_sharpe_portfolio_per_simulation.append(max_sharpe_ratio_portfolio, ignore_index=True)
 
 # Get the portfolio with the greatest sharpe ratio
-max_sharpes = []
-for i in range(0, num_of_simulations): max_sharpes.append(max_sharpe_simulation[i].iloc[0]['Sharpe Ratio'])
-max_sharpe_index = max_sharpes.index(max(max_sharpes))
+best_sharpe_ratio = max_sharpe_portfolio_per_simulation['Sharpe Ratio'].max()
+best_portfolio = max_sharpe_portfolio_per_simulation.loc[max_sharpe_portfolio_per_simulation['Sharpe Ratio'] == best_sharpe_ratio].reset_index()
 
 # Save a db table with portfolio info (return, volatility and sharpe ratio)
-portfolio_info_df = pd.DataFrame(data=max_sharpe_simulation[max_sharpe_index].iloc[0][0:3])
-portfolio_info_df.columns = ['Value']
+best_portfolio_info_df = best_portfolio.iloc[0][1:4].rename(index=str, columns={0:'Amount'})
+best_portfolio_info_df.at['Annual Log Return'] *= 252
+best_portfolio_info_df.at['Volatility'] *= np.sqrt(252)
 db.delete_table(new_portfolio_name + '_info')
-db.create_db_dataframe(portfolio_info_df, new_portfolio_name + '_info')
+db.create_db_dataframe(best_portfolio_info_df, new_portfolio_name + '_info')
 
 # Create the final output table from the optimiser and save to db
-final_optimiser_df = create_optimiser_table(max_sharpe_simulation, max_sharpe_index, new_portfolio_allocation)
+best_portfolio_weights = best_portfolio.iloc[0][4:]
+final_optimiser_df = create_optimiser_table(best_portfolio_weights, new_portfolio_allocation)
 db.delete_table(new_portfolio_name)
 db.create_db_dataframe(final_optimiser_df, new_portfolio_name)
 
