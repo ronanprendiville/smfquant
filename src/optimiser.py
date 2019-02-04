@@ -5,13 +5,15 @@ import matplotlib.pyplot as plt
 from db_engine import DbEngine
 import requests
 import datetime
+import time
 
+start = time.time()
 # User-Defined Inputs
-new_portfolio_name = "test"
+new_portfolio_name = "time_test"
 new_portfolio_allocation = 60000
 risk_free_rate = 0.0
-num_of_simulations = 50
-num_of_portfolios = 50
+num_of_simulations = 5000
+num_of_portfolios = 50000
 
 def calculate_optimiser_inputs(tickers):
     """Returns two pandas DataFrames: mean (daily) returns for each
@@ -28,7 +30,7 @@ def calculate_optimiser_inputs(tickers):
 
 
 def simulate_portfolios(tickers, num_of_portfolios, returns, covariances, risk_free_rate):
-    """Returns a DataFrame with the following columns: 'Return', 'Volatility', 'Sharpe Ratio', '<stock>',
+    """Returns a pandas DataFrame with the following columns: 'Return', 'Volatility', 'Sharpe Ratio', '<stock>',
     with each row index representing a specific portfolio with a different set of generated weights.
     Parameters:
         num_of_portfolios: The number of portfolios we wish to generate
@@ -74,6 +76,7 @@ def get_exchange_rate():
     which has a less up-to-date rate. Function currently only allows EUR.
     NOTE: If access_key is expired/invalid, another one can be obtained from https://currencylayer.com/.
     Just sign up with a free account."""
+
     access_key = '850e3fc0a17849d164d52a579e381b61';
     params = {
         'access_key': access_key,
@@ -101,10 +104,27 @@ def get_exchange_rate():
 
 
 def create_optimiser_table(best_portfolio_weights, portfolio_allocation):
-    """"""
+    """Returns a pandas DataFrame with information on how much capital to allocate to each stock and the corresponding
+    number of shares.
+    Parameters:
+        best_portfolio_weights: A DataFrame representing a portfolio with specific weights ascribed to each stock in the
+                                portfolio.
+        portfolio_allocation: Amount (in euros) to be invested in the portfolio.
+    Table Columns:
+        Weight: The exact proportion of the initial capital to be allocated to each stock.
+        Amount: The exact amount (in euros) to be allocated to each stock.
+        Share Price: Stock price (in euros)
+        Number of Shares: The exact number of shares to be bought for each stock.
+        Rounded Off: The value of the 'Number of Shares' column rounded off.
+        Amount Rounded Off: The cost of buying the number of shares specified by the 'Rounded Off' column.
+        Rounded Up: The value of the 'Number of Shares' column rounded up.
+        Amount Rounded Up: The cost of buying the number of shares specified by the 'Rounded Up' column.
+        Rounded Down: The value of the 'Number of Shares' column rounded down.
+        Amount Rounded Down: The cost of buying the number of shares specified by the 'Rounded Down' column.
+        ..."""
 
     end = datetime.datetime.today()
-    start = end-datetime.timedelta(days=7);
+    start = end-datetime.timedelta(days=7)
     end = end.__format__('%Y-%m-%d')
     start = start.__format__('%Y-%m-%d')
     eurusd = get_exchange_rate()
@@ -140,8 +160,8 @@ def create_optimiser_table(best_portfolio_weights, portfolio_allocation):
 
     optimiser_df = pd.DataFrame(optimiser_df)
 
-    columns = ['Weight', 'Amount', 'Share Price', 'Number of Shares', 'Rounded Off',
-               'Amount Rounded Off', 'Rounded Up', 'Amount Rounded Up', 'Rounded Down', 'Amount Rounded Down']
+    columns = ['Weight', 'Amount', 'Share Price', 'Number of Shares', 'Rounded Off', 'Amount Rounded Off',
+               'Rounded Up', 'Amount Rounded Up', 'Rounded Down', 'Amount Rounded Down']
     total = {}
     for column in columns:
         if column == 'Stock':
@@ -212,6 +232,7 @@ best_portfolio = max_sharpe_portfolio_per_simulation.loc[max_sharpe_portfolio_pe
 best_portfolio_info_df = best_portfolio.iloc[0][1:4].rename('Amount')
 best_portfolio_info_df.at['Annual Log Return'] *= 252
 best_portfolio_info_df.at['Volatility'] *= np.sqrt(252)
+best_portfolio_info_df = best_portfolio_info_df.append(pd.Series({'Total No. of Portfolios Generated': num_of_simulations*num_of_portfolios}))
 db.delete_table(new_portfolio_name + '_info')
 db.create_db_dataframe(best_portfolio_info_df, new_portfolio_name + '_info')
 
