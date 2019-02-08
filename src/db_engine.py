@@ -21,9 +21,9 @@ class DbEngine:
         try:
             conn = self.engine.connect()
             if conn is not None:
-                print("Successful Database Connection")
+                print("-I- Successful Database Connection")
         except Exception as e:
-            print(e)
+            print("-E- " + e)
 
     @staticmethod
     def decode_password(p):
@@ -38,11 +38,11 @@ class DbEngine:
         :return: None
         """
         try:
-            print("Write " + table_name + " with dataframe")
+            print("-I- Write " + table_name + " with dataframe")
             df.to_sql(name=table_name, con=self.engine, if_exists='replace', index=True)
-            print("Write complete.")
+            print("-I- Write complete.")
         except Exception as e:
-            print(e)
+            print("-E- " + e)
 
     def append_db_dataframe(self, df, table_name):
         """
@@ -52,11 +52,11 @@ class DbEngine:
         :return: None
         """
         try:
-            print("Append " + table_name + " with dataframe")
+            print("-I- Append " + table_name + " with dataframe")
             df.to_sql(name=table_name, con=self.engine, if_exists='append', index=True)
-            print("Append complete.")
+            print("-I- Append complete.")
         except Exception as e:
-            print(e)
+            print("-E- " + e)
 
     def fetch_db_dataframe(self, table_name):
         """
@@ -66,10 +66,10 @@ class DbEngine:
         """
         try:
             df = pd.read_sql("SELECT * from " + table_name, self.engine)
-            print("Completed read dataframe from " + table_name)
+            print("-I- Completed read dataframe from " + table_name)
             return df
         except Exception as e:
-            print(e)
+            print("-E- " + e)
 
     def delete_table(self, table_name):
         """
@@ -80,7 +80,7 @@ class DbEngine:
         try:
             conn = self.engine.connect()
             conn.execute("DROP table " + table_name)
-            print("Deleted table " + table_name)
+            print("-I- Deleted table " + table_name)
         except Exception as e:
-            print(e)
+            print("-E- " + e)
 
