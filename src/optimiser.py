@@ -201,45 +201,46 @@ def plot_portfolios(portfolios, max_ret_port):
     plt.legend(handles=legend_handle, labels=legend_label)
     plt.show()
 
+if __name__ == "__main__": #The following code will not be run when optimizer.py is imported
 
-"""This is where I begin the implementation of the optimiser.
-"""
-
-# Initialise Database Engine
-db = DbEngine()
-
-# Get list of top-ranked stocks and store it in an array
-ranked_scores = db.fetch_db_dataframe("rankings_table_2")
-top_ranking_scores = ranked_scores.nsmallest(30, "Ranking_Score")
-stocks = [stock for stock in top_ranking_scores["Ticker"]]
-
-# Calculate the mean returns and covariance of returns
-mean_historical_returns, covariance_of_returns = calculate_optimiser_inputs(stocks)
-
-# Run simulations and store the max-sharpe-ratio portfolio at the end of each one
-max_sharpe_portfolio_per_simulation = pd.DataFrame(columns=['Annual Log Return', 'Volatility', 'Sharpe Ratio']+stocks)
-for i in range(0, num_of_simulations):
-    portfolios = simulate_portfolios(stocks, num_of_portfolios, mean_historical_returns, covariance_of_returns, risk_free_rate)
-    max_sharpe_ratio = portfolios['Sharpe Ratio'].max()
-    max_sharpe_ratio_portfolio = portfolios.loc[portfolios['Sharpe Ratio'] == max_sharpe_ratio]
-    max_sharpe_portfolio_per_simulation = max_sharpe_portfolio_per_simulation.append(max_sharpe_ratio_portfolio, ignore_index=True)
-
-# Get the portfolio with the greatest sharpe ratio
-best_sharpe_ratio = max_sharpe_portfolio_per_simulation['Sharpe Ratio'].max()
-best_portfolio = max_sharpe_portfolio_per_simulation.loc[max_sharpe_portfolio_per_simulation['Sharpe Ratio'] == best_sharpe_ratio].reset_index()
-
-# Save a db table with portfolio info (return, volatility and sharpe ratio)
-best_portfolio_info_df = best_portfolio.iloc[0][1:4].rename('Amount')
-best_portfolio_info_df.at['Annual Log Return'] *= 252
-best_portfolio_info_df.at['Volatility'] *= np.sqrt(252)
-best_portfolio_info_df = best_portfolio_info_df.append(pd.Series({'Total No. of Portfolios Generated': num_of_simulations*num_of_portfolios}))
-db.delete_table(new_portfolio_name + '_info')
-db.create_db_dataframe(best_portfolio_info_df, new_portfolio_name + '_info')
-
-# Create the final output table from the optimiser and save to db
-best_portfolio_weights = best_portfolio.iloc[0][4:]
-final_optimiser_df = create_optimiser_table(best_portfolio_weights, new_portfolio_allocation)
-db.delete_table(new_portfolio_name)
-db.create_db_dataframe(final_optimiser_df, new_portfolio_name)
-
-# plot_portfolios(portfolios, max_sharpe_ratio_portfolio)
+    """This is where I begin the implementation of the optimiser.
+    """
+    
+    # Initialise Database Engine
+    db = DbEngine()
+    
+    # Get list of top-ranked stocks and store it in an array
+    ranked_scores = db.fetch_db_dataframe("rankings_table_2")
+    top_ranking_scores = ranked_scores.nsmallest(30, "Ranking_Score")
+    stocks = [stock for stock in top_ranking_scores["Ticker"]]
+    
+    # Calculate the mean returns and covariance of returns
+    mean_historical_returns, covariance_of_returns = calculate_optimiser_inputs(stocks)
+    
+    # Run simulations and store the max-sharpe-ratio portfolio at the end of each one
+    max_sharpe_portfolio_per_simulation = pd.DataFrame(columns=['Annual Log Return', 'Volatility', 'Sharpe Ratio']+stocks)
+    for i in range(0, num_of_simulations):
+        portfolios = simulate_portfolios(stocks, num_of_portfolios, mean_historical_returns, covariance_of_returns, risk_free_rate)
+        max_sharpe_ratio = portfolios['Sharpe Ratio'].max()
+        max_sharpe_ratio_portfolio = portfolios.loc[portfolios['Sharpe Ratio'] == max_sharpe_ratio]
+        max_sharpe_portfolio_per_simulation = max_sharpe_portfolio_per_simulation.append(max_sharpe_ratio_portfolio, ignore_index=True)
+    
+    # Get the portfolio with the greatest sharpe ratio
+    best_sharpe_ratio = max_sharpe_portfolio_per_simulation['Sharpe Ratio'].max()
+    best_portfolio = max_sharpe_portfolio_per_simulation.loc[max_sharpe_portfolio_per_simulation['Sharpe Ratio'] == best_sharpe_ratio].reset_index()
+    
+    # Save a db table with portfolio info (return, volatility and sharpe ratio)
+    best_portfolio_info_df = best_portfolio.iloc[0][1:4].rename('Amount')
+    best_portfolio_info_df.at['Annual Log Return'] *= 252
+    best_portfolio_info_df.at['Volatility'] *= np.sqrt(252)
+    best_portfolio_info_df = best_portfolio_info_df.append(pd.Series({'Total No. of Portfolios Generated': num_of_simulations*num_of_portfolios}))
+    db.delete_table(new_portfolio_name + '_info')
+    db.create_db_dataframe(best_portfolio_info_df, new_portfolio_name + '_info')
+    
+    # Create the final output table from the optimiser and save to db
+    best_portfolio_weights = best_portfolio.iloc[0][4:]
+    final_optimiser_df = create_optimiser_table(best_portfolio_weights, new_portfolio_allocation)
+    db.delete_table(new_portfolio_name)
+    db.create_db_dataframe(final_optimiser_df, new_portfolio_name)
+    
+    # plot_portfolios(portfolios, max_sharpe_ratio_portfolio)
