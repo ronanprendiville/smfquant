@@ -4,3 +4,4 @@ matplotlib
 requests
 sqlalchemy
 psycopg2
+tensorflow
