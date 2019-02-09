@@ -5,28 +5,65 @@ import matplotlib.pyplot as plt
 from db_engine import DbEngine
 import requests
 import datetime
-import time
 
-start = time.time()
 # User-Defined Inputs
-new_portfolio_name = "time_test"
+new_portfolio_name = 'log_test'
+rankings_table_name = 'rankings_table_2'
+closing_prices_table_name = 'closing_prices_s_and_p_2'
+number_of_ranked_stocks = 30
 new_portfolio_allocation = 60000
 risk_free_rate = 0.0
-num_of_simulations = 5000
-num_of_portfolios = 50000
+num_of_simulations = 500; info_log_frequency = 10 # Must be a factor of num_of_simulations
+num_of_portfolios = 50
 
-def calculate_optimiser_inputs(tickers):
+def get_top_ranked_stocks(db, rankings_table_name, number_of_ranked_stocks):
+    """Returns an array containing the top-ranked stocks.
+    Parameters:
+        rankings_table_name: Name of the db table containing stock rankings
+        number_of_ranked_stocks: The number of top-ranked stocks to be retrieved.
+    """
+
+    print("-I- Fetching stock rankings from " + rankings_table_name)
+    ranked_scores = db.fetch_db_dataframe(rankings_table_name)
+    top_ranking_scores = ranked_scores.nsmallest(number_of_ranked_stocks, "Ranking_Score")
+    stocks = [stock for stock in top_ranking_scores["Ticker"]]
+    return stocks
+
+
+def calculate_optimiser_inputs(db, tickers, closing_prices_table_name):
     """Returns two pandas DataFrames: mean (daily) returns for each
      stock in tickers and matrix of covariances between stocks' returns."""
 
-    prices = db.fetch_db_dataframe("closing_prices_s_and_p_2")
-    prices_of_top_30 = prices.loc[:,tickers]
+    print("-I- Fetching closing prices from " + closing_prices_table_name)
+    prices = db.fetch_db_dataframe(closing_prices_table_name)
+    prices_of_top_30 = prices.loc[:, tickers]
 
     # Gets the mean of (daily) historical log returns and the covariance of stock log returns.
+    print("-I- Calculating mean daily returns and covariances of returns")
     log_returns = np.log(prices_of_top_30).diff()
     mean = log_returns.mean()
     covariances = log_returns.cov()
     return mean, covariances
+
+
+def run_simulations(num_of_simulations, num_of_portfolios, returns, covariances, risk_free_rate, info_log_frequency):
+    """Returns a pandas DataFrame where each row is the portfolio with the best Sharpe ratio
+    from each Monte Carlo simulation.
+    """
+
+    print("-I- Beginning Monte-Carlo simulations of " + str(num_of_portfolios) + " portfolios each")
+
+    max_sharpe_portfolio_per_simulation = pd.DataFrame(columns=['Annual Log Return', 'Volatility', 'Sharpe Ratio']+stocks)
+    for i in range(0, num_of_simulations):
+        portfolios = simulate_portfolios(stocks, num_of_portfolios, returns, covariances, risk_free_rate)
+        max_sharpe_ratio = portfolios['Sharpe Ratio'].max()
+        max_sharpe_ratio_portfolio = portfolios.loc[portfolios['Sharpe Ratio'] == max_sharpe_ratio]
+        max_sharpe_portfolio_per_simulation = max_sharpe_portfolio_per_simulation.append(max_sharpe_ratio_portfolio, ignore_index=True)
+
+        if (i+1) % (num_of_simulations/info_log_frequency) == 0:
+            print("-I- Finished " + str(i+1) + "/" + str(num_of_simulations) + " simulations")
+
+    return max_sharpe_portfolio_per_simulation
 
 
 def simulate_portfolios(tickers, num_of_portfolios, returns, covariances, risk_free_rate):
@@ -77,7 +114,7 @@ def get_exchange_rate():
     NOTE: If access_key is expired/invalid, another one can be obtained from https://currencylayer.com/.
     Just sign up with a free account."""
 
-    access_key = '850e3fc0a17849d164d52a579e381b61';
+    access_key = '850e3fc0a17849d164d52a579e381b61'
     params = {
         'access_key': access_key,
         'currencies': 'EUR',
@@ -98,7 +135,7 @@ def get_exchange_rate():
         date_of_rate = quote.loc[quote['DEXUSEU'] == fx_rate].iloc[-1].name
 
     fx_rate = fx_rate if (fx_rate > 1) else 1/fx_rate
-    print('-I- Using EURUSD rate of', fx_rate, 'as of', date_of_rate)
+    print('-I- Using EURUSD rate of', np.round(fx_rate, 5), 'as of', date_of_rate)
 
     return(fx_rate)
 
@@ -110,6 +147,7 @@ def create_optimiser_table(best_portfolio_weights, portfolio_allocation):
         best_portfolio_weights: A DataFrame representing a portfolio with specific weights ascribed to each stock in the
                                 portfolio.
         portfolio_allocation: Amount (in euros) to be invested in the portfolio.
+
     Table Columns:
         Weight: The exact proportion of the initial capital to be allocated to each stock.
         Amount: The exact amount (in euros) to be allocated to each stock.
@@ -123,6 +161,7 @@ def create_optimiser_table(best_portfolio_weights, portfolio_allocation):
         Amount Rounded Down: The cost of buying the number of shares specified by the 'Rounded Down' column.
         ..."""
 
+    print("-I- Creating final table for optimal portfolio")
     end = datetime.datetime.today()
     start = end-datetime.timedelta(days=7)
     end = end.__format__('%Y-%m-%d')
@@ -134,6 +173,7 @@ def create_optimiser_table(best_portfolio_weights, portfolio_allocation):
     amount = optimiser_df.loc[:]['Weight'] * portfolio_allocation
     optimiser_df.insert(len(optimiser_df.columns), 'Amount', amount)
 
+    print("-I- Fetching last closing stock prices")
     share_price = pdr.DataReader(list(optimiser_df.index), data_source='yahoo', start=start, end=end)['Adj Close'].iloc[-1]/eurusd
     optimiser_df.insert(len(optimiser_df.columns), 'Share Price', share_price)
 
@@ -201,6 +241,7 @@ def plot_portfolios(portfolios, max_ret_port):
     plt.legend(handles=legend_handle, labels=legend_label)
     plt.show()
 
+
 if __name__ == "__main__": #The following code will not be run when optimizer.py is imported
 
     """This is where I begin the implementation of the optimiser.
@@ -208,38 +249,36 @@ if __name__ == "__main__": #The following code will not be run when optimizer.py
     
     # Initialise Database Engine
     db = DbEngine()
-    
+
     # Get list of top-ranked stocks and store it in an array
-    ranked_scores = db.fetch_db_dataframe("rankings_table_2")
-    top_ranking_scores = ranked_scores.nsmallest(30, "Ranking_Score")
-    stocks = [stock for stock in top_ranking_scores["Ticker"]]
-    
+    stocks = get_top_ranked_stocks(db, rankings_table_name, number_of_ranked_stocks)
+
     # Calculate the mean returns and covariance of returns
-    mean_historical_returns, covariance_of_returns = calculate_optimiser_inputs(stocks)
-    
-    # Run simulations and store the max-sharpe-ratio portfolio at the end of each one
-    max_sharpe_portfolio_per_simulation = pd.DataFrame(columns=['Annual Log Return', 'Volatility', 'Sharpe Ratio']+stocks)
-    for i in range(0, num_of_simulations):
-        portfolios = simulate_portfolios(stocks, num_of_portfolios, mean_historical_returns, covariance_of_returns, risk_free_rate)
-        max_sharpe_ratio = portfolios['Sharpe Ratio'].max()
-        max_sharpe_ratio_portfolio = portfolios.loc[portfolios['Sharpe Ratio'] == max_sharpe_ratio]
-        max_sharpe_portfolio_per_simulation = max_sharpe_portfolio_per_simulation.append(max_sharpe_ratio_portfolio, ignore_index=True)
+    mean_historical_returns, covariance_of_returns = calculate_optimiser_inputs(db, stocks, closing_prices_table_name)
+
+    # Run simulations and store the max-sharpe-ratio portfolio of each simulation
+    max_sharpe_portfolio_per_simulation = run_simulations(num_of_simulations, num_of_portfolios, mean_historical_returns, covariance_of_returns, risk_free_rate, info_log_frequency)
     
     # Get the portfolio with the greatest sharpe ratio
     best_sharpe_ratio = max_sharpe_portfolio_per_simulation['Sharpe Ratio'].max()
     best_portfolio = max_sharpe_portfolio_per_simulation.loc[max_sharpe_portfolio_per_simulation['Sharpe Ratio'] == best_sharpe_ratio].reset_index()
     
     # Save a db table with portfolio info (return, volatility and sharpe ratio)
+    print("-I- Fetching portfolio with the greatest Sharpe ratio")
     best_portfolio_info_df = best_portfolio.iloc[0][1:4].rename('Amount')
     best_portfolio_info_df.at['Annual Log Return'] *= 252
     best_portfolio_info_df.at['Volatility'] *= np.sqrt(252)
     best_portfolio_info_df = best_portfolio_info_df.append(pd.Series({'Total No. of Portfolios Generated': num_of_simulations*num_of_portfolios}))
+
+    print("-I- Saving optimal portfolio info to database")
     db.delete_table(new_portfolio_name + '_info')
     db.create_db_dataframe(best_portfolio_info_df, new_portfolio_name + '_info')
     
     # Create the final output table from the optimiser and save to db
     best_portfolio_weights = best_portfolio.iloc[0][4:]
     final_optimiser_df = create_optimiser_table(best_portfolio_weights, new_portfolio_allocation)
+
+    print("-I- Saving table for optimal portfolio to database")
     db.delete_table(new_portfolio_name)
     db.create_db_dataframe(final_optimiser_df, new_portfolio_name)
     

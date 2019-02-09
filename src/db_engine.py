@@ -23,7 +23,7 @@ class DbEngine:
             if conn is not None:
                 print("-I- Successful Database Connection")
         except Exception as e:
-            print("-E- " + e)
+            print("-W- " + str(e))
 
     @staticmethod
     def decode_password(p):
@@ -33,43 +33,43 @@ class DbEngine:
 
     def create_db_dataframe(self, df, table_name):
         """
-        Create a new DB table for the dataframe
-        Arguments: pandas dataframe, DB table_name
+        Create a new DB table for the DataFrame
+        Arguments: pandas DataFrame, DB table_name
         :return: None
         """
         try:
-            print("-I- Write " + table_name + " with dataframe")
+            print("-I- Writing " + table_name + " with DataFrame")
             df.to_sql(name=table_name, con=self.engine, if_exists='replace', index=True)
             print("-I- Write complete.")
         except Exception as e:
-            print("-E- " + e)
+            print("-W- " + str(e))
 
     def append_db_dataframe(self, df, table_name):
         """
-        Appends dataframe to the specified table
-        :param df: pandas dataframe with data to append
+        Appends DataFrame to the specified table
+        :param df: pandas DataFrame with data to append
         :param table_name: DB table to append
         :return: None
         """
         try:
-            print("-I- Append " + table_name + " with dataframe")
+            print("-I- Appending " + table_name + " with DataFrame")
             df.to_sql(name=table_name, con=self.engine, if_exists='append', index=True)
             print("-I- Append complete.")
         except Exception as e:
-            print("-E- " + e)
+            print("-W- " + str(e))
 
     def fetch_db_dataframe(self, table_name):
         """
-        Fetch table rows as dataframe from DB
+        Fetch table rows as DataFrame from DB
         :param table_name: table to query
-        :return: dataframe
+        :return: DataFrame
         """
         try:
             df = pd.read_sql("SELECT * from " + table_name, self.engine)
-            print("-I- Completed read dataframe from " + table_name)
+            print("-I- Completed read of DataFrame from " + table_name)
             return df
         except Exception as e:
-            print("-E- " + e)
+            print("-W- " + str(e))
 
     def delete_table(self, table_name):
         """
@@ -82,5 +82,5 @@ class DbEngine:
             conn.execute("DROP table " + table_name)
             print("-I- Deleted table " + table_name)
         except Exception as e:
-            print("-E- " + e)
+            print("-W- " + str(e))
 
