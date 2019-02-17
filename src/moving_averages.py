@@ -34,6 +34,34 @@ start = datetime.datetime(2018, 2, 12)
 print(start)
 end = datetime.datetime.today()
 
+def moving_average_df(start=None, end=None, short_term=21, long_term=55):
+    
+    spx = pdr.DataReader("^GSPC", data_source="yahoo", end=end)['Adj Close'] 
+    # Get prices from earliest available data until end
+    df = pd.DataFrame()
+    
+    # st, lt = short term, long term
+    
+    df['sma st'] = spx.rolling(short_term).mean()
+    df['sma lt'] = spx.rolling(long_term).mean()
+    
+    alpha_short_term = 2/(short_term + 1)
+    alpha_long_term = 2/(long_term + 1)
+    
+    df['ema st'] = spx.ewm(adjust=False, alpha=alpha_short_term).mean()
+    df['ema lt'] = spx.ewm(adjust=False, alpha=alpha_long_term).mean()
+    
+    df['dema st'] = 2*df['ema st'] - df['ema st'].ewm(adjust=False, 
+                                                      alpha=alpha_short_term).mean()
+    df['dema lt'] = 2*df['ema lt'] - df['ema lt'].ewm(adjust=False, 
+                                                      alpha=alpha_long_term).mean()
+    
+    df['sma bullish'] = np.where(df['sma st'] > df['sma lt'], "buy", "")
+    df['ema bullish'] = np.where(df['ema st'] > df['ema lt'], "buy", "")
+    df['dema bullish'] = np.where(df['dema st'] > df['dema lt'], "buy", "")
+    
+    #Return indicators for only dates between start and end
+    return df[['sma bullish', 'ema bullish', 'dema bullish']].loc[start:end]
 
 # print(pdr.get_data_yahoo("SPY", start, end, interval="d"))
 dict = {
