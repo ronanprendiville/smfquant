@@ -7,14 +7,18 @@ import requests
 import datetime
 
 # User-Defined Inputs
-new_portfolio_name = 'log_test'
-rankings_table_name = 'rankings_table_2'
-closing_prices_table_name = 'closing_prices_s_and_p_2'
-number_of_ranked_stocks = 30
-new_portfolio_allocation = 60000
-risk_free_rate = 0.0
-num_of_simulations = 500; info_log_frequency = 10 # Must be a factor of num_of_simulations
-num_of_portfolios = 50
+if __name__ == '__main__':
+    new_portfolio_name = 'bmf_test'
+    rankings_table_name = 'test_rankings_table'
+    closing_prices_table_name = 'test_closing_prices_s_and_p'
+    price_for_purchase = 'end'  # string: date of prices to be used for calculating number of shares to buy per stock
+                                # 'end' to use last date in closing_prices_table_name or 'today' for latest closing price.
+                                # Can also pass a datetime string, e.g. '2018-05-25' to get the price as of that date
+    number_of_ranked_stocks = 30
+    new_portfolio_allocation = 95000
+    risk_free_rate = 0.0
+    num_of_simulations = 50000; info_log_frequency = 1000 # Must be a factor of num_of_simulations
+    num_of_portfolios = 20000
 
 def get_top_ranked_stocks(db, rankings_table_name, number_of_ranked_stocks):
     """Returns an array containing the top-ranked stocks.
@@ -140,7 +144,7 @@ def get_exchange_rate():
     return(fx_rate)
 
 
-def create_optimiser_table(best_portfolio_weights, portfolio_allocation):
+def create_optimiser_table(db, price_for_purchase, best_portfolio_weights, portfolio_allocation, closing_prices=closing_prices_table_name):
     """Returns a pandas DataFrame with information on how much capital to allocate to each stock and the corresponding
     number of shares.
     Parameters:
@@ -162,7 +166,13 @@ def create_optimiser_table(best_portfolio_weights, portfolio_allocation):
         ..."""
 
     print("-I- Creating final table for optimal portfolio")
-    end = datetime.datetime.today()
+    if price_for_purchase == 'today':
+        end = datetime.datetime.today()
+    elif price_for_purchase == 'end':
+        end = db.fetch_db_dataframe(closing_prices).iloc[-1,0]
+    else:
+        end = datetime.strptime(price_for_purchase)
+
     start = end-datetime.timedelta(days=7)
     end = end.__format__('%Y-%m-%d')
     start = start.__format__('%Y-%m-%d')
@@ -276,7 +286,7 @@ if __name__ == "__main__": #The following code will not be run when optimizer.py
     
     # Create the final output table from the optimiser and save to db
     best_portfolio_weights = best_portfolio.iloc[0][4:]
-    final_optimiser_df = create_optimiser_table(best_portfolio_weights, new_portfolio_allocation)
+    final_optimiser_df = create_optimiser_table(db,price_for_purchase, best_portfolio_weights, new_portfolio_allocation)
 
     print("-I- Saving table for optimal portfolio to database")
     db.delete_table(new_portfolio_name)
