@@ -3,8 +3,9 @@ import pandas as pd
 import yahoo_api as yapi
 import db_engine as db
 import psycopg2
+import datetime
 
-cookie = "AQIC5wM2LY4Sfcz5uHfW3PbV4TVW8gtXt7VioH%2BvM6hD%2BXw%3D%40AAJTSQACMTAAAlNLABMxMzg5NDkwMzczMjc0MzM0MDUyAAJTMQACMjY%3D%23"
+cookie = "AQIC5wM2LY4Sfcy9yfN%2F%2Bnl51vCVdcj0P%2F234UHpCUWVtxk%3D%40AAJTSQACMTAAAlNLABM4OTY3MjA2MDI0MjMxODA3NTYzAAJTMQACMjg%3D%23"
 headers = {"Cookie": "iPlanetDirectoryPro=" + cookie + ";Path=/"}
 tickers_by_sector = yapi.s_and_p_500_tickers_by_sector()
 
@@ -45,7 +46,7 @@ o = ["AAL", "CHRW", "CTAS", "CPRT", "CSX", "EXPD", "FAST", "INFO", "JBHT", "PCAR
       "EQIX", "REG", "SBAC",
       "COST", "FANG", "KHC", "MDLZ", "MNST", "PEP", "WBA"]
 
-def get_pe_vals(tickers):
+def get_pe_vals(tickers, historical = False):
     pe_dict = {}
     for stock in tickers:
         # If it fails, uncomment this print statement to see what stock it fails on.
@@ -68,8 +69,16 @@ def get_pe_vals(tickers):
             temp = stock
             stock = stock.replace("-B", "b")
 
-        # Here we retrieve the html of the Eikon page and parse it using pandas
-        r = requests.get("https://emea1.apps.cp.thomsonreuters.com/Explorer/EVzCORPxFUNDTALSzRATIO.aspx?taxonomy=global&s=" + stock + "&st=RIC&mode=full-topMenu-banner-tabBar-leftMenu-relNav&tempcss=schema4&embeddedView=true&trace=", headers=headers)
+        if (historical == True):
+            r = requests.get("https://emea1.apps.cp.thomsonreuters.com/Explorer/EVzCORPxFUNDTALSzRATIOzPROFIT.aspx?taxonomy=global&s="
+                             +stock+"&st=RIC&mode=full-topMenu-banner-tabBar-leftMenu-relNav&tempcss=schema4&embeddedView=true&trace=",
+                             headers=headers)
+        else:
+            # Here we retrieve the html of the Eikon page and parse it using pandas
+            r = requests.get("https://emea1.apps.cp.thomsonreuters.com/Explorer/EVzCORPxFUNDTALSzRATIO.aspx?taxonomy=global&s="
+                             + stock + "&st=RIC&mode=full-topMenu-banner-tabBar-leftMenu-relNav&tempcss=schema4&embeddedView=true&trace=",
+                             headers=headers)
+
         tables = pd.read_html(r.text, header=0, index_col=0)
 
         # Stocks with additional letters are converted back into their original values
@@ -82,42 +91,68 @@ def get_pe_vals(tickers):
         if(temp in ["BRK-B", "BF-B"]):
             stock = temp
 
+        if (historical == True):
+            # TODO: Parametrise date
 
-        # This finds the P/E values in our parsed html.
-        # For some reason the values are located in slightly different places for some stocks.
-        if(stock in
-                ["BA","FLR", "HON", "AET", "JNJ", "PFE", "VRTX", "SWKS", "IPG", "FOXA",
-                 "FOX", "VZ", "DIS", "EXPE", "LEN", "NWL", "AWK", "CMS", "NRG", "BBT",
-                 "C", "FITB", "JPM", "MS", "WLTW", "PLD", "KMB", "APA", "CVX", "DVN", "XOM",
-                 "NOV", "WMB", "FRC"]):
-            pe = tables[10].loc["Curr P/E Excl Extra, LTM:", "LTM"]
+            # Checks is most recent release before Jan 7th. If not, goes to 2nd latest release.
+            print(tables[3].loc["Period End Date:"][0])
+            if pd.to_datetime(tables[3].loc["Period End Date:"][0])<pd.to_datetime("2019-01-07"):
+                i = 0
+            else:
+                print("BACK WE GO")
+                i = 1
+
+            date = pd.to_datetime(tables[3].loc["Period End Date:"][i])
+            strdate = date.strftime('%Y-%m-%d')
+
+            # Price of stock on release date
+            price1 = yapi.get_price_dataframe([stock], strdate).iloc[1][-1]
+
+            # TODO: Parametrise date
+            # Price of stock on Jan 7th
+            price2 = yapi.get_price_dataframe([stock], "2019-01-07").iloc[1][-1]
+            pe = tables[3].loc["Hist P/E, TTM"][i]
+            if(pe == '-'):
+                pe = '0'
+            pe = float(pe)/price1 * price2
+
         else:
-            pe = tables[7].loc["Curr P/E Excl Extra, LTM:", "LTM"]
+            # This finds the P/E values in our parsed html.
+            # For some reason the values are located in slightly different places for some stocks.
+            if(stock in
+                    ["BA","FLR", "HON", "AET", "JNJ", "PFE", "VRTX", "SWKS", "IPG", "FOXA",
+                     "FOX", "VZ", "DIS", "EXPE", "LEN", "NWL", "AWK", "CMS", "NRG", "BBT",
+                     "C", "FITB", "JPM", "MS", "WLTW", "PLD", "KMB", "APA", "CVX", "DVN", "XOM",
+                     "NOV", "WMB", "FRC"]):
+                pe = tables[10].loc["Curr P/E Excl Extra, LTM:", "LTM"]
+            else:
+                pe = tables[7].loc["Curr P/E Excl Extra, LTM:", "LTM"]
 
-        if(pe == '--'):
-            pe = '0'
+            if(pe == '--'):
+                pe = '0'
 
         # Adds the stock and p/e value to a dictionary
         pe_dict[stock] = pe
+
     return pe_dict
+
+print(get_pe_vals(["AAPL"], historical=True))
 
 
 pe_engine = db.DbEngine()
-
-
 def insert_pe_to_db(stock_universe):
-    pe_engine.delete_table("pe_table_2")
+    pe_engine.delete_table("test_pe_table")
 
     fresh_table = pd.DataFrame(columns=["PE"])
     fresh_table.index.name="Ticker"
-    pe_engine.create_db_dataframe(fresh_table, "pe_table_2")
+    pe_engine.create_db_dataframe(fresh_table, "test_pe_table")
 
     for industry in stock_universe:
         print(industry)
         sector_pe_data = get_pe_vals(stock_universe[industry])
         df = pd.DataFrame.from_dict(sector_pe_data, orient="index", columns=["PE"])
         df.index.name="Ticker"
-        pe_engine.append_db_dataframe(df, "pe_table_2")
+        pe_engine.append_db_dataframe(df, "test_pe_table")
 
     return True
 
@@ -127,21 +162,21 @@ def insert_single_sector_pe_to_db(stock_universe,industry):
     sector_pe_data = get_pe_vals(stock_universe[industry])
     df = pd.DataFrame.from_dict(sector_pe_data, orient="index", columns=["PE"])
     df.index.name="Ticker"
-    pe_engine.append_db_dataframe(df, "pe_table_2")
+    pe_engine.append_db_dataframe(df, "test_pe_table")
 
     return True
 
-#insert_single_sector_pe_to_db(tickers_by_sector,"Industrials")
+# insert_single_sector_pe_to_db(tickers_by_sector,"Industrials")
 # insert_single_sector_pe_to_db(tickers_by_sector,"Health Care")
-#insert_single_sector_pe_to_db(tickers_by_sector,"Information Technology")
-#insert_single_sector_pe_to_db(tickers_by_sector,"Communication Services")
-#insert_single_sector_pe_to_db(tickers_by_sector,"Consumer Discretionary")
-#insert_single_sector_pe_to_db(tickers_by_sector,"Utilities")
-#insert_single_sector_pe_to_db(tickers_by_sector,"Financials")
-#insert_single_sector_pe_to_db(tickers_by_sector,"Materials")
-#insert_single_sector_pe_to_db(tickers_by_sector,"Real Estate")
-#insert_single_sector_pe_to_db(tickers_by_sector,"Consumer Staples")
-insert_single_sector_pe_to_db(tickers_by_sector,"Energy")
+# insert_single_sector_pe_to_db(tickers_by_sector,"Information Technology")
+# insert_single_sector_pe_to_db(tickers_by_sector,"Communication Services")
+# insert_single_sector_pe_to_db(tickers_by_sector,"Consumer Discretionary")
+# insert_single_sector_pe_to_db(tickers_by_sector,"Utilities")
+# insert_single_sector_pe_to_db(tickers_by_sector,"Financials")
+# insert_single_sector_pe_to_db(tickers_by_sector,"Materials")
+# insert_single_sector_pe_to_db(tickers_by_sector,"Real Estate")
+# insert_single_sector_pe_to_db(tickers_by_sector,"Consumer Staples")
+# insert_single_sector_pe_to_db(tickers_by_sector,"Energy")
 
 
 # insert_pe_to_db(tickers_by_sector)
