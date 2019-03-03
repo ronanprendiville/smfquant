@@ -6,8 +6,8 @@ import pandas as pd
 
 new_portfolio_allocation = 60000
 risk_free_rate = 0
-bounds = (0.01, 0.1)
-penalty = 15
+bounds = (0.01, 0.1) # All weights will be in this range
+penalty = 15 # The higher this is, the fewer nontrivial weights there will be
 
 def calculate_optimiser_inputs(tickers):
     """Returns two pandas DataFrames: mean (daily) returns for each
