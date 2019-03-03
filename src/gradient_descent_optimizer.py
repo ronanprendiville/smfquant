@@ -143,7 +143,8 @@ if __name__ == "__main__":
                               risk_free_rate=risk_free_rate)
     
     print(portfolio)
-    weights = portfolio.values
+    weights = portfolio.values/np.sum(portfolio.values)
+    # Percentage allocated to each stock
 
     portfolio_sd = np.sqrt(weights @ covariance_of_returns.values @ weights * 252)
     portfolio_ev = weights @ mean_historical_returns.values * 252
