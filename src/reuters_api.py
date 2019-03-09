@@ -6,6 +6,10 @@ from db_engine import DbEngine
 
 
 def get_pe_value(ticker):
+    """
+    The Eikon desktop app must be open in order for this to work
+    :returns: The price earnings value of the ticker
+    """
     if "." in ticker:
         # Wikipedia has BRK.B and BF.B, but eikon has BRKb and BFb
         # This converts wikipedia's names to eikon's names
@@ -13,10 +17,12 @@ def get_pe_value(ticker):
         ticker = parts[0] + parts[1].lower()
 
     for suffix in ["", ".K", ".O"]:
+        # Try all suffixes until one that works if found
         pe = ek.get_data(ticker + suffix, 'TR.PE')[0].iloc[0, 1] 
         if not np.isnan(pe):
             print("{:7} {:.4f}".format(ticker + suffix, pe))
             return pe
+    # If no suffixes work, assume that the pe value is 0 or possibly negative
     return 0
 
 
