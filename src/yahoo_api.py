@@ -9,10 +9,18 @@ def s_and_p_500_tickers_by_sector():
     """
     sectors_tickers={} #dictionary
     wikipedia_url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-    df = pd.read_html(wikipedia_url,header=0)[1]
+    df = pd.read_html(wikipedia_url,header=0)[0]
     for i in df['GICS Sector'].unique():
         sectors_tickers[i]=[df['Symbol'][j] for j in df[df['GICS Sector']==i].index]
     return sectors_tickers
+
+
+def s_and_p_500_tickers():
+    """Returns a list of all 505 companies on the S&P500
+    """
+    wikipedia_url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+    df = pd.read_html(wikipedia_url, header=0)[0]
+    return list(df['Symbol'])
 
 
 def store_data_csv(tickers, start, end):
