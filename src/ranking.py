@@ -2,8 +2,8 @@ from db_engine import DbEngine
 import pandas as pd
 
 db = DbEngine()
-pe_df = db.fetch_db_dataframe("pe_table_2")
-prices_df = db.fetch_db_dataframe("closing_prices_s_and_p_2")
+pe_df = db.fetch_db_dataframe("pe_table_3")
+prices_df = db.fetch_db_dataframe("closing_prices_s_and_p_3")
 
 # Get tickers which are the column names from the prices dataframe
 # and convert from a numpy array to a list using .tolist()
@@ -70,11 +70,11 @@ def rank_values(dictionary, by="High to Low"):
 
 
 def insert_rankings_to_db(scores):
-    db.delete_table("rankings_table_2")
+    db.delete_table("rankings_table_3")
 
     df = pd.DataFrame.from_dict(scores, orient="index", columns=["Ranking_Score"])
     df.index.name = "Ticker"
-    db.create_db_dataframe(df, "rankings_table_2")
+    db.create_db_dataframe(df, "rankings_table_3")
 
     return True
 
