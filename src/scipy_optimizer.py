@@ -6,14 +6,14 @@ import pandas as pd
 
 new_portfolio_allocation = 60000
 risk_free_rate = 0
-bounds = (0.01, 0.1) # All weights will be in this range
-penalty = 15 # The higher this is, the fewer nontrivial weights there will be
+bounds = (0, 1) # All weights will be in this range
+penalty = 0 # The higher this is, the fewer nontrivial weights there will be
 
 def calculate_optimiser_inputs(tickers):
     """Returns two pandas DataFrames: mean (daily) returns for each
      stock in tickers and matrix of covariances between stocks' returns."""
 
-    prices = db.fetch_db_dataframe("closing_prices_s_and_p_2")
+    prices = db.fetch_db_dataframe("closing_prices_s_and_p_3")
     prices_of_top_30 = prices.loc[:,tickers]
 
     # Gets the mean of (daily) historical log returns and the covariance of stock log returns.
@@ -52,14 +52,10 @@ if __name__ == "__main__":
     start = time.time()
 
     db = DbEngine()
-    #ranked_scores = db.fetch_db_dataframe("rankings_table_2")
-    #top_ranking_scores = ranked_scores.nsmallest(30, "Ranking_Score")
-    #stocks = [stock for stock in top_ranking_scores["Ticker"]]
 
-    stocks = ["TWTR", "PGR", "ZION", "HCA", "PPL", "TXT", "UDR", "VZ", "PCAR", 
-              "NEE", "YUM", "IR", "EXC", "MPC", "STI", "IQV", "NFLX", "HPQ", 
-              "NRG", "IPG", "USB", "UAL", "PSX", "SIVB", "UHS", "HPE", "HBAN", 
-              "WM", "OMC", "HIG"]
+    ranked_scores = db.fetch_db_dataframe("rankings_table_3")
+    top_ranking_scores = ranked_scores.nsmallest(30, "Ranking_Score")
+    stocks = [stock for stock in top_ranking_scores["Ticker"]]
 
     # Get list of top-ranked stocks and store it in an array
     # Calculate the mean returns and covariance of returns
@@ -71,7 +67,7 @@ if __name__ == "__main__":
                               bounds=bounds,
                               penalty=penalty)
     
-    print(portfolio)
+    print(np.round(portfolio, 3))
     weights = portfolio/np.sum(portfolio)
     # Percentage allocated to each stock
 
