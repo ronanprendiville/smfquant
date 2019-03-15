@@ -115,6 +115,12 @@ class Optimizer:
         percent_weights = np.round(100 * self._weights, 4)
         return " ".join(str(x) for x in (sorted(percent_weights, reverse=True)))
 
+    @property
+    def portfolio(self):
+        return pd.Series(data=self.weights, index=self._mu.index).sort_values(
+            ascending=False
+        ).round(6)
+
 
 if __name__ == "__main__":
     db = DbEngine()
@@ -143,6 +149,7 @@ if __name__ == "__main__":
                       args.penalty)
         o.print_summary()
         weights = o.weights
+        print(o.portfolio)
         print(f"{np.sum(weights - weights.min() < 0.001)} weights at min")
         raise SystemExit
 
