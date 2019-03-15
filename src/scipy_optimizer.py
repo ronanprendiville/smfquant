@@ -4,6 +4,8 @@ import numpy as np
 import time
 import pandas as pd
 from itertools import product
+import sys
+import argparse
 
 
 def calculate_optimiser_inputs(db,
@@ -105,12 +107,18 @@ if __name__ == "__main__":
         "closing_prices_s_and_p_3"
     )
 
-    #o = Optimizer(mu, Sigma, (0.01, 1), 26)
-    #print(o.weights)
-    #o.print_summary()
-    #weights = o.weights
-    #print(np.count_nonzero(weights == weights.min()))
-    #raise SystemExit
+    if len(sys.argv) > 1:
+        parser = argparse.ArgumentParser()
+        parser.add_argument("penalty", nargs="?", default=0, type=float)
+        parser.add_argument("lower_bound", nargs="?", default=0, type=float)
+        parser.add_argument("upper_bound", nargs="?", default=1, type=float)
+        args = parser.parse_args()
+
+        o = Optimizer(mu, Sigma, (args.lower_bound, args.upper_bound), args.penalty)
+        o.print_summary()
+        weights = o.weights
+        print(f"{np.sum(weights - weights.min() < 0.001)} weights at min")
+        raise SystemExit
 
     portfolios_df = pd.DataFrame()
 
