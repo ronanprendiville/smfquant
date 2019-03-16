@@ -156,16 +156,19 @@ if __name__ == "__main__":
     portfolios_df = pd.DataFrame()
     # A dataframe containing info on all of the portfolios found
 
-    gammas = list(range(0, 35)) # Range of penalty values to loop through
-    lbs = np.linspace(0.02, 0.033, 10) # Range of lower bounds to loop through
-    ubs = np.linspace(0.033, 1, 10) # Range of upper bounds to loop through
+    gammas = [0] # Range of penalty values to loop through
+    lbs = np.linspace(0.01, 0.44, 100) # Range of lower bounds to loop through
+    ubs = np.linspace(0.01, 0.44, 10) # Range of upper bounds to loop through
 
     for gamma, lb, ub in product(gammas, lbs, ubs):
+        if lb >= ub:
+            continue
         print(gamma, lb, ub, end="\r")
         o = Optimizer(mu, Sigma, bounds=(lb, ub), penalty=gamma)
+        if np.abs(np.sum(o.weights) - 1) > 0.001:
+            continue
         params = {"sharpe":o.sharpe, "mean":o.mean, "sd":o.sd, 
-                  "bounds":o.bounds, "penalty":o.penalty, 
-                  "unique":np.sum(o.weights - o.weights.min() > 0.01)}
+                  "bounds":o.bounds, "penalty":o.penalty}
         portfolios_df = portfolios_df.append(params, ignore_index=True)
         #o.print_summary()
     print()
@@ -174,13 +177,6 @@ if __name__ == "__main__":
     # Portfolios ranked by sharpe ratio
     print(sorted_pf)                                    
 
-    sorted_pf2 = portfolios_df.sort_values(by=["unique", "sharpe"],
-                                          ascending=False)
-    # Portfolios ranked by how many values there are that aren't just the min 
-    # value
-    print(sorted_pf2)                                    
-
-    sorted_pf[['sharpe', 'unique', 'bounds', 'penalty']].to_csv("sharpe.csv")
-    sorted_pf2[['sharpe', 'unique', 'bounds', 'penalty']].to_csv("unique.csv")
+    sorted_pf[['sharpe', 'bounds', 'penalty']].to_csv("sharpe.csv")
     
 
